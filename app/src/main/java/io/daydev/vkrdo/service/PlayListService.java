@@ -64,7 +64,7 @@ public class PlayListService extends AbstractLocalBinderService implements PlayL
             toPlay.clear();
             toResolve.clear();
         }
-
+        resolverHandler.removeCallbacks(vkResolver);
         Log.e("PlayListService", "Starting for "+radioInfo.getTitle());
 
         currentRadio = radioInfo;
@@ -79,23 +79,15 @@ public class PlayListService extends AbstractLocalBinderService implements PlayL
             }
         });
 
-        resolverHandler.removeCallbacks(vkResolver);
         vkResolver.run();
-
         return true;
     }
 
     private void addToResolve(int count){
-        if (currentRadio == null){
-            toPlay.add(FAIL);
-            if (callback != null){
-                callback.callback(FAIL);
-            }
-        } else {
             echoService.getNextAsync(count, new Callback<Tuple<String, Collection<SongInfo>>>() {
                 @Override
                 public void callback(Tuple<String, Collection<SongInfo>> obj) {
-                    if (obj != null) {
+                    if (obj != null && currentRadio != null) {
                         String title = obj.getFirst();
                         if (title != null && title.equals(currentRadio.getTitle())) {
                             Collection<SongInfo> songs = obj.getSecond();
@@ -110,47 +102,49 @@ public class PlayListService extends AbstractLocalBinderService implements PlayL
                             }
                         }
                     } else {
-                        toPlay.add(FAIL);
+                        /*toPlay.add(FAIL);
                         if (callback != null){
                             callback.callback(FAIL);
-                        }
+                        }*/
                     }
                 }
             });
-        }
     }
 
     Runnable vkResolver = new Runnable() {
         @Override
         public void run() {
-            final SongInfo songInfo = toResolve.poll();
-            if (songInfo != null){
-                vkService.getSongUriAsync(songInfo, new Callback<String>() {
-                    @Override
-                    public void callback(String obj) {
-                        if (obj != null) {
-                            songInfo.setLocation(obj);
-                            toPlay.add(songInfo);
-                            Log.i("PlayListService", "resolved "+songInfo);
-                            if (callback != null){
-                                callback.callback(songInfo);
-                            }
-                        }
-                    }
-                });
-                if (callbackChecker != null && !callbackChecker.check(songInfo)) {
-                    lastFmService.getArtistPhoto(songInfo, new Callback<Tuple<String, String>>() {
+            final RadioInfo radio = currentRadio;
+            if (radio != null) {
+                final SongInfo songInfo = toResolve.poll();
+                if (songInfo != null) {
+                    vkService.getSongUriAsync(songInfo, new Callback<String>() {
                         @Override
-                        public void callback(Tuple<String, String> obj) {
-                            if (obj != null) {
-                                songInfo.setArtistPhoto(obj.getFirst());
-                                songInfo.setAlbum(obj.getSecond());
+                        public void callback(String obj) {
+                            if (obj != null && radio.isSame(currentRadio)) {
+                                songInfo.setLocation(obj);
+                                toPlay.add(songInfo);
+                                Log.i("PlayListService", "resolved " + songInfo);
+                                if (callback != null) {
+                                    callback.callback(songInfo);
+                                }
                             }
                         }
                     });
+                    if (callbackChecker != null && !callbackChecker.check(songInfo)) {
+                        lastFmService.getArtistPhoto(songInfo, new Callback<Tuple<String, String>>() {
+                            @Override
+                            public void callback(Tuple<String, String> obj) {
+                                if (obj != null && radio.isSame(currentRadio)) {
+                                    songInfo.setArtistPhoto(obj.getFirst());
+                                    songInfo.setAlbum(obj.getSecond());
+                                }
+                            }
+                        });
+                    }
                 }
+                resolverHandler.postDelayed(vkResolver, 500);
             }
-            resolverHandler.postDelayed(vkResolver, 500);
         }
     };
 

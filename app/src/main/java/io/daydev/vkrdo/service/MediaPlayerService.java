@@ -2,44 +2,37 @@ package io.daydev.vkrdo.service;
 
 import android.app.Notification;
 import android.app.NotificationManager;
-import android.app.PendingIntent;
-import android.app.TaskStackBuilder;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.content.res.AssetFileDescriptor;
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.media.session.MediaController;
 import android.media.session.MediaSession;
-import android.os.AsyncTask;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Parcelable;
 import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
-import io.daydev.vkrdo.MainActivity;
 import io.daydev.vkrdo.MediaEvent;
 import io.daydev.vkrdo.R;
 import io.daydev.vkrdo.bean.RadioInfo;
 import io.daydev.vkrdo.bean.SongInfo;
+import io.daydev.vkrdo.notification.MediaNotification;
+import io.daydev.vkrdo.notification.MediaNotificationCallback;
 import io.daydev.vkrdo.util.Callback;
 import io.daydev.vkrdo.util.CallbackChecker;
-import io.daydev.vkrdo.util.SimpleDiskCache;
 
 import java.io.Serializable;
-import java.net.URL;
 
 
 /**
  * MediaPlayerService
  */
 public class MediaPlayerService extends AbstractLocalBinderService implements Callback<SongInfo>, CallbackChecker<SongInfo>, ServiceConnection {
-
-    private static final String EMPTY_KEY = "qwerty";
 
     public static final String ACTION_EMPTY = "action_empty";
     public static final String ACTION_PLAY = "action_play";
@@ -57,15 +50,13 @@ public class MediaPlayerService extends AbstractLocalBinderService implements Ca
     private MediaPlayer mediaPlayer;
     private MediaSession mediaSession;
     private MediaController mediaController;
-
-    private final Handler handler = new Handler();
-
+    private MediaNotification mediaNotification;
 
     private PlayListService playListService;
     private boolean playListServiceBound = false;
 
-    private volatile  boolean waiting = false;
-    private Bitmap currentBitmap;
+    private volatile boolean waiting = false;
+    private volatile boolean paused = false;
     private RadioInfo radio;
 
     public static final int MSG_TRACK_LIST_CHANGES = 3;
@@ -77,21 +68,6 @@ public class MediaPlayerService extends AbstractLocalBinderService implements Ca
     public static final int MSG_PROGRESS = 9;
     public static final int MSG_SEEK = 10;
     public static final int MSG_ART = 11;
-    public static final int MSG_NEXT = 12;
-    public static final int MSG_STATUS = 13;
-
-    private SimpleDiskCache diskCache;
-
-
-    private final Runnable progressNotification = new Runnable() {
-        public void run() {
-            sendMessage(MSG_PROGRESS, mediaPlayer.getCurrentPosition());
-            if (mediaPlayer.isPlaying()) {
-                handler.postDelayed(progressNotification, 1000);
-            }
-        }
-    };
-
 
     /**
      * calls callback when song added
@@ -104,7 +80,6 @@ public class MediaPlayerService extends AbstractLocalBinderService implements Ca
     }
 
 
-
     private void handleIntent(Intent intent) {
         if (intent == null || intent.getAction() == null || playListService == null) {
             return;
@@ -112,7 +87,7 @@ public class MediaPlayerService extends AbstractLocalBinderService implements Ca
 
         String action = intent.getAction().toLowerCase();
         MediaController.TransportControls controls = mediaController.getTransportControls();
-        switch (action){
+        switch (action) {
             case ACTION_PLAY:
                 if (playListService.generate(radio)) {
                     playListService.setCallback(this);
@@ -130,28 +105,29 @@ public class MediaPlayerService extends AbstractLocalBinderService implements Ca
                 controls.skipToPrevious();
                 break;
             case ACTION_NEXT:
-                if (!waiting){
+                if (!waiting) {
                     controls.skipToNext();
                 }
                 break;
             case ACTION_GENRE:
-                if (radio != null){
-                    sendMessage(MSG_STOP, null); // send message - current raio stop playing....
-                    controls.stop();
+                if (radio != null) {
+                    sendMessage(MSG_STOP, null); // send message - current radio stop playing....
+                    controls.stop();  // and realy stop
                 }
                 radio = (RadioInfo) intent.getSerializableExtra(EXTRA_RADIO);
                 break;
             case ACTION_SEEK:
                 try {
-                    Integer seek = (Integer) intent.getSerializableExtra(ACTION_SEEK);
-                    if (seek != null && mediaPlayer.isPlaying()) {
+                    Integer seek = (Integer) intent.getSerializableExtra(EXTRA_SEEK);
+                    if (seek != null && mediaPlayer != null && mediaPlayer.isPlaying()) {
                         mediaPlayer.seekTo(seek);
                     }
-                }catch (Exception e){
+                } catch (Exception e) {
                     Log.e("MediaPLayerService", "while seekTo", e);
                 }
                 break;
             case ACTION_STATUS:
+                Log.e("omfg", "action status " + playListService.isPlayListStated());
                 if (playListService.isPlayListStated()) {
                     sendMessage(MSG_TRACK_LIST_CHANGES, playListService.getToPlaySimpleFormat());
                     if (mediaPlayer != null && mediaPlayer.isPlaying()) {
@@ -159,102 +135,17 @@ public class MediaPlayerService extends AbstractLocalBinderService implements Ca
                     }
                     SongInfo song = playListService.getCurrent();
                     if (song != null) {
-                        sendMessage (MSG_SET_CURRENT_SONG, song);
+                        sendMessage(MSG_SET_CURRENT_SONG, song);
                         if (mediaPlayer != null && mediaPlayer.isPlaying()) {
                             sendMessage(MSG_PLAY, song);
                         }
                     }
-                    sendMessage(MSG_ART, currentBitmap);
+                    if (mediaNotification != null) {
+                        sendMessage(MSG_ART, mediaNotification.getCurrentBitmap());
+                    }
                 }
 
         }
-    }
-
-    private Notification.Action generateAction(int icon, String title, String intentAction) {
-        Intent intent = new Intent(getApplicationContext(), MediaPlayerService.class);
-        intent.setAction(intentAction);
-        PendingIntent pendingIntent = PendingIntent.getService(getApplicationContext(), 1, intent, 0);
-        return new Notification.Action.Builder(icon, title, pendingIntent).build();
-    }
-
-    private void buildNotification(final Notification.Action action, final SongInfo songInfo) {
-        if (songInfo == null){
-            return;
-        }
-        if (!cacheContains(songInfo) && songInfo.getArtistPhoto() != null && !songInfo.getArtistPhoto().isEmpty()) {
-            try {
-
-                AsyncTask<String, String, Bitmap> task = new AsyncTask<String, String, Bitmap>() {
-                    @Override
-                    protected Bitmap doInBackground(String... params) {
-                        try {
-                            Bitmap image;
-                            if (!cacheContains(songInfo)){
-                                URL url = new URL(params[0]);
-                                image = BitmapFactory.decodeStream(url.openConnection().getInputStream());
-                                if (image != null) {
-                                    putCache(songInfo, image);
-                                }
-                            } else {
-                                image = getCache(songInfo);
-                            }
-
-                            if (image != null){
-                                SongInfo song = playListService.getCurrent();
-                                if (song != null && song.equals(songInfo)) {
-                                    buildImageNotification(action, songInfo.getArtist(), songInfo.getTitle(), image);
-                                    sendMessage(MSG_ART, image);
-                                }
-                            }
-
-                        } catch (Exception e) {
-                            Log.e("MediaPlayerService", "network error", e);
-                        }
-                        return null;
-                    }
-                };
-                task.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, songInfo.getArtistPhoto());
-            } catch (Exception e) {
-                Log.e("MediaPlayerService", "network error", e);
-            }
-        }
-        Bitmap bitmap = getCache(songInfo);
-        buildImageNotification(action, songInfo.getArtist(), songInfo.getTitle(), bitmap);
-        sendMessage(MSG_ART, bitmap);
-    }
-
-    private void buildImageNotification(Notification.Action action, String artist, String track, Bitmap image) {
-        currentBitmap = image;
-        Notification.MediaStyle style = new Notification.MediaStyle();
-        Intent intent = new Intent(getApplicationContext(), MediaPlayerService.class);
-        intent.setAction(ACTION_STOP);
-        PendingIntent pendingIntent = PendingIntent.getService(getApplicationContext(), 1, intent, 0);
-        Notification.Builder builder = new Notification.Builder(this)
-                .setSmallIcon(R.drawable.ic_headphones)
-                .setContentTitle(artist)
-                .setContentText(track)
-                .setDeleteIntent(pendingIntent)
-                .setStyle(style);
-
-        if (image != null) {
-            builder.setLargeIcon(image);
-            //builder.setColor(BitmapUtil.getDominantColor(image));
-        }
-        builder.addAction(action);
-        builder.addAction(generateAction(android.R.drawable.ic_media_next, "Next", ACTION_NEXT));
-        style.setShowActionsInCompactView(0, 1);
-        style.setMediaSession(mediaSession.getSessionToken());
-
-        // Creates an explicit intent for an Activity in your app
-        Intent resultIntent = new Intent(this, MainActivity.class);
-        TaskStackBuilder stackBuilder = TaskStackBuilder.create(this);
-        stackBuilder.addParentStack(MainActivity.class);
-        stackBuilder.addNextIntent(resultIntent);
-        PendingIntent resultPendingIntent = stackBuilder.getPendingIntent(0, PendingIntent.FLAG_UPDATE_CURRENT);
-        builder.setContentIntent(resultPendingIntent);
-
-        NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-        notificationManager.notify(1, builder.build());
     }
 
     /**
@@ -263,16 +154,15 @@ public class MediaPlayerService extends AbstractLocalBinderService implements Ca
     @Override
     public void onCreate() {
         super.onCreate();
-
-        Intent intent = new Intent(this, PlayListService.class);
-        bindService(intent, this, Context.BIND_AUTO_CREATE);
-
-        diskCache = new SimpleDiskCache(this, "journal", 1024 * 1024 * 50, Bitmap.CompressFormat.JPEG, 90);
+        if (!playListServiceBound) {
+            Intent serviceIntent = new Intent(this, PlayListService.class);
+            bindService(serviceIntent, this, Context.BIND_AUTO_CREATE);
+        }
     }
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        if (mediaPlayer == null) {
+        if (mediaSession == null) {
             initMediaSessions();
         }
         handleIntent(intent);
@@ -280,24 +170,53 @@ public class MediaPlayerService extends AbstractLocalBinderService implements Ca
     }
 
     private void initMediaSessions() {
-        mediaPlayer = new MediaPlayer();
-        mediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
-        mediaPlayer.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
+        mediaNotification = new MediaNotification(this, ACTION_PLAY, ACTION_PAUSE, ACTION_STOP, ACTION_NEXT);
+        mediaNotification.setBitmapCallback(new MediaNotificationCallback() {
             @Override
-            public void onCompletion(MediaPlayer mp) {
-                mediaController.getTransportControls().skipToNext();
+            public boolean imageCheck(SongInfo song, Bitmap image) {
+                SongInfo current = playListService.getCurrent();
+                return song != null && song.equals(current);
+            }
+
+            @Override
+            public void notifyImage(Bitmap image) {
+                sendMessage(MSG_ART, image);
             }
         });
-
 
         mediaSession = new MediaSession(getApplicationContext(), "VK radio media session");
         mediaController = new MediaController(getApplicationContext(), mediaSession.getSessionToken());
         mediaSession.setCallback(new MediaSession.Callback() {
 
+                                     private final Handler handler = new Handler();
+
+                                     private final Runnable progressNotification = new Runnable() {
+                                         public void run() {
+                                             try {
+                                                 sendMessage(MSG_PROGRESS, mediaPlayer.getCurrentPosition());
+                                                 if (mediaPlayer != null && mediaPlayer.isPlaying()) {
+                                                     handler.postDelayed(progressNotification, 1000);
+                                                 }
+                                             } catch (Exception e) {
+                                                 Log.e("MediaPlayerService", "progressNotifycation", e);
+                                             }
+                                         }
+                                     };
+
                                      @Override
                                      public void onPlay() {
                                          super.onPlay();
                                          Log.e("MediaPlayerService", "onPlay");
+                                         if (paused) { //resume from paused
+                                             try {
+                                                 if (mediaPlayer != null) {
+                                                     mediaPlayer.start();
+                                                 }
+                                             } catch (IllegalStateException ignore) {
+                                                 //
+                                             }
+                                         }
+                                         paused = false;
                                          playNext();
                                      }
 
@@ -305,11 +224,14 @@ public class MediaPlayerService extends AbstractLocalBinderService implements Ca
                                      public void onPause() {
                                          super.onPause();
                                          Log.e("MediaPlayerService", "onPause");
-                                         mediaPlayer.pause();
+                                         if (mediaPlayer != null) {
+                                             mediaPlayer.pause();
+                                         }
+                                         paused = true;
                                          sendMessage(MSG_PAUSE, null);
                                          SongInfo song = playListService.getCurrent();
                                          if (song != null) {
-                                             buildImageNotification(generateAction(android.R.drawable.ic_media_play, "Play", ACTION_PLAY), song.getArtist(), song.getTitle(), currentBitmap);
+                                             buildNotification(mediaNotification.actionPlay(getApplicationContext()), song);
                                          }
                                      }
 
@@ -327,7 +249,10 @@ public class MediaPlayerService extends AbstractLocalBinderService implements Ca
                                          Log.e("MediaPlayerService", "onStop");
                                          sendMessage(MSG_STOP, null);
 
-                                         mediaPlayer.release();
+                                         if (mediaPlayer != null) {
+                                             mediaPlayer.release();
+                                             mediaPlayer = null;
+                                         }
 
                                          NotificationManager notificationManager = (NotificationManager) getApplicationContext().getSystemService(Context.NOTIFICATION_SERVICE);
                                          notificationManager.cancel(1);
@@ -336,23 +261,32 @@ public class MediaPlayerService extends AbstractLocalBinderService implements Ca
                                      }
 
                                      private void playNext() {
+                                         if (mediaPlayer == null) {
+                                             mediaPlayer = new MediaPlayer();
+                                             mediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
+                                             mediaPlayer.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
+                                                 @Override
+                                                 public void onCompletion(MediaPlayer mp) {
+                                                     mediaController.getTransportControls().skipToNext();
+                                                 }
+                                             });
+                                         }
+
+                                         paused = false;
                                          final SongInfo song = playListService.next();
                                          try {
-                                             try {
-                                                 mediaPlayer.reset();
-                                             }catch (Exception ignore){
-                                                 //ignore
-                                             }
+                                             mediaPlayer.reset();
                                              handler.removeCallbacks(progressNotification);
 
                                              if (song.getLocation() == null) {
-                                                 try(AssetFileDescriptor afd = getBaseContext().getResources().openRawResourceFd(R.raw.threesec)) {
+                                                 try (AssetFileDescriptor afd = getBaseContext().getResources().openRawResourceFd(R.raw.threesec)) {
                                                      mediaPlayer.setDataSource(afd.getFileDescriptor(), afd.getStartOffset(), afd.getLength());
                                                  }
                                                  waiting = true;
                                              } else {
                                                  waiting = false;
                                                  mediaPlayer.setDataSource(song.getLocation());
+
                                                  sendMessage(MSG_TRACK_LIST_CHANGES, playListService.getToPlaySimpleFormat());
 
                                                  handler.postDelayed(progressNotification, 1000);
@@ -366,9 +300,8 @@ public class MediaPlayerService extends AbstractLocalBinderService implements Ca
                                                  @Override
                                                  public void onPrepared(MediaPlayer mp) {
                                                      mediaPlayer.start();
-
                                                      sendMessage(MSG_SET_DURATION, mediaPlayer.getDuration());
-                                                     buildNotification(generateAction(android.R.drawable.ic_media_pause, "Pause", ACTION_PAUSE), song);
+                                                     buildNotification(mediaNotification.actionPause(getApplicationContext()), song);
                                                  }
                                              });
 
@@ -376,7 +309,7 @@ public class MediaPlayerService extends AbstractLocalBinderService implements Ca
                                          } catch (Exception e) {
                                              try {
                                                  mediaPlayer.pause();
-                                             }catch (Exception ignore){
+                                             } catch (Exception ignore) {
                                                  //ignore
                                              }
                                              Log.e("MediaPlayerService", "while next", e);
@@ -384,8 +317,16 @@ public class MediaPlayerService extends AbstractLocalBinderService implements Ca
 
                                      }
 
-                                 }
-        );
+                                 });
+    }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        if (playListServiceBound) {
+            unbindService(this);
+            playListServiceBound = false;
+        }
     }
 
     @Override
@@ -414,7 +355,7 @@ public class MediaPlayerService extends AbstractLocalBinderService implements Ca
     @Override
     public void onServiceConnected(ComponentName name, IBinder service) {
         AbstractLocalBinderService.LocalBinder<PlayListService> binder = (AbstractLocalBinderService.LocalBinder<PlayListService>) service;
-        playListService =  binder.getService();
+        playListService = binder.getService();
         playListServiceBound = true;
     }
 
@@ -436,60 +377,9 @@ public class MediaPlayerService extends AbstractLocalBinderService implements Ca
 
     @Override
     public boolean check(SongInfo obj) {
-        return diskCache != null && cacheContains(obj);
+        return mediaNotification != null && mediaNotification.cacheContains(obj);
     }
 
-    private boolean cacheContains(SongInfo songInfo) {
-        if (songInfo == null){
-            return false;
-        }
-        String cacheKey = buildCacheKey(songInfo);
-        String caheKey2 = buildCacheKeyL2(songInfo);
-        return (!cacheKey.equals(EMPTY_KEY) && (diskCache.containsKey(cacheKey)) || (!caheKey2.equals(EMPTY_KEY)  && diskCache.containsKey(caheKey2))) ;
-    }
-
-    private Bitmap getCache(SongInfo songInfo){
-        if (!cacheContains(songInfo)){
-            return null;
-        }
-        String cacheKey = buildCacheKey(songInfo);
-        String cacheKey2 = buildCacheKeyL2(songInfo);
-        Bitmap ret = null;
-        if (!cacheKey2.equals(EMPTY_KEY)){
-            ret = diskCache.getBitmap(cacheKey2);
-        }
-        if (ret == null && !cacheKey.equals(EMPTY_KEY)){
-            ret = diskCache.getBitmap(cacheKey);
-        }
-        return ret;
-    }
-
-    private void putCache(SongInfo songInfo, Bitmap bitmap){
-        String cache2 = buildCacheKeyL2(songInfo);
-        if (!cache2.equals(EMPTY_KEY)) {
-            diskCache.put(cache2, bitmap);
-        } else {
-            String cache = buildCacheKey(songInfo);
-            if (!cache.equals(EMPTY_KEY)){
-                diskCache.put(cache, bitmap);
-            }
-        }
-    }
-
-    private String buildCacheKey(SongInfo songInfo){
-        return songInfo == null ? EMPTY_KEY : buildCacheKey(songInfo.getArtist(), songInfo.getTitle());
-    }
-
-    private String buildCacheKeyL2 (SongInfo songInfo){
-        return songInfo == null || songInfo.getAlbum() == null || songInfo.getAlbum().isEmpty() ? EMPTY_KEY : buildCacheKey(songInfo.getArtist(), songInfo.getAlbum());
-    }
-
-    private String buildCacheKey(String artist, String title){
-        if (artist == null || title == null){
-            return EMPTY_KEY;
-        }
-        return artist+ " "+title;
-    }
 
     /**
      * send message to clients
@@ -503,10 +393,21 @@ public class MediaPlayerService extends AbstractLocalBinderService implements Ca
         intent.putExtra(MediaEvent.DATA_MESSAGE_CODE, msg);
         if (data instanceof Serializable) {
             intent.putExtra(MediaEvent.DATA_SERIALIZEBLE, (Serializable) data);
-        } else if (data instanceof Parcelable){
+        } else if (data instanceof Parcelable) {
             intent.putExtra(MediaEvent.DATA_PARCEABLE, (Parcelable) data);
         }
 
         LocalBroadcastManager.getInstance(this).sendBroadcast(intent);
+    }
+
+    private void buildNotification(final Notification.Action action, final SongInfo songInfo) {
+        if (mediaNotification == null || mediaSession == null) {
+            return;
+        }
+        Notification.Builder builder = mediaNotification.buildNotification(getApplicationContext(), action, songInfo, mediaSession.getSessionToken());
+        if (builder != null) {
+            NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+            notificationManager.notify(1, builder.build());
+        }
     }
 }

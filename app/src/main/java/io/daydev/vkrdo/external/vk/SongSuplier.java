@@ -13,7 +13,11 @@ import java.util.Collection;
 public class SongSuplier {
 
     public void getSongUriAsync(final SongInfo song, final Callback<String> callback) {
-        VKRequest get = new VKRequest("audio.search", VKParameters.from(VKApiConst.Q, song.getArtist() + " " + song.getTitle(), VKApiConst.COUNT, 10));
+        String title = song.getTitle();
+        if (title.contains(" (Radio Edit)")){
+            title = title.replace(" (Radio Edit)", "");
+        }
+        VKRequest get = new VKRequest("audio.search", VKParameters.from(VKApiConst.Q, song.getArtist() + " " + title, VKApiConst.COUNT, 10));
         get.executeWithListener(new VKRequest.VKRequestListener() {
             @Override
             public void onComplete(VKResponse response) {
