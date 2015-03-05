@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="linkArtist">
+        <item>Similar</item>
+        <item>Limit to</item>
+    </string-array>
+
+    <string-array name="linkArtistValues">
+        <item>1</item>
+        <item>2</item>
+    </string-array>
+
+    <string-array name="moodList">
+        <item>EMPTY</item>
+        <item>aggressive</item>
+        <item>ambient</item>
+        <item>angry</item>
+        <item>angst-ridden</item>
+        <item>bouncy</item>
+        <item>calming</item>
+        <item>carefree</item>
+        <item>cheerful</item>
+        <item>cold</item>
+        <item>complex</item>
+        <item>cool</item>
+        <item>dark</item>
+        <item>disturbing</item>
+        <item>dramatic</item>
+        <item>dreamy</item>
+        <item>eerie</item>
+        <item>elegant</item>
+        <item>energetic</item>
+        <item>enthusiastic</item>
+        <item>epic</item>
+        <item>fun</item>
+        <item>funky</item>
+        <item>futuristic</item>
+        <item>gentle</item>
+        <item>gleeful</item>
+        <item>gloomy</item>
+        <item>groovy</item>
+        <item>happy</item>
+        <item>harsh</item>
+        <item>haunting</item>
+        <item>humorous</item>
+        <item>hypnotic</item>
+        <item>industrial</item>
+        <item>intense</item>
+        <item>intimate</item>
+        <item>joyous</item>
+        <item>laid-back</item>
+        <item>light</item>
+        <item>lively</item>
+        <item>manic</item>
+        <item>meditation</item>
+        <item>melancholia</item>
+        <item>mellow</item>
+        <item>mystical</item>
+        <item>ominous</item>
+        <item>party music</item>
+        <item>passionate</item>
+        <item>pastoral</item>
+        <item>peaceful</item>
+        <item>playful</item>
+        <item>poignant</item>
+        <item>quiet</item>
+        <item>rebellious</item>
+        <item>reflective</item>
+        <item>relax</item>
+        <item>romantic</item>
+        <item>rowdy</item>
+        <item>sad</item>
+        <item>sentimental</item>
+        <item>sexy</item>
+        <item>smooth</item>
+        <item>soothing</item>
+        <item>sophisticated</item>
+        <item>spacey</item>
+        <item>spiritual</item>
+        <item>strange</item>
+        <item>sweet</item>
+        <item>theater</item>
+        <item>trippy</item>
+        <item>warm</item>
+        <item>whimsical</item>
+    </string-array>
+
+
+
+</resources>

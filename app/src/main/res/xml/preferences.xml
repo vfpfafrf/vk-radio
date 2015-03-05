@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <PreferenceCategory android:title="Genre choose">
+        <EditTextPreference android:title="Genre"
+                            android:key="genre"
+                            android:summary="Genre name"/>
+    </PreferenceCategory>
+
+    <PreferenceCategory android:title="Artist choose">
+        <EditTextPreference android:title="Artist"
+                            android:key="artist"
+                            android:summary="Artist name"/>
+
+        <ListPreference
+                android:title="Type of "
+                android:summary="This preference allows to select type of artist link"
+                android:key="artistLink"
+                android:entries="@array/linkArtist"
+                android:entryValues="@array/linkArtistValues" />
+
+    </PreferenceCategory>
+
+    <PreferenceCategory android:title="Common">
+        <ListPreference android:title="Mood"
+                        android:summary="This preference allows to select mood of radio"
+                        android:key="mood"
+                        android:defaultValue="digiGreen"
+                        android:entries="@array/moodList"
+                        android:entryValues="@array/moodList" />
+    </PreferenceCategory>
+
+</PreferenceScreen>

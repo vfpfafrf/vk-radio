@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">vk radio</string>
+    <string name="play_str">PLAY</string>
+    <string name="next_str">NEXT</string>
+    <string name="pause_str">PAUSE</string>
+    <string name="set_preferences">radio settings</string>
+    <string name="radio_settings">Radio settings</string>
+    <string name="image_hint">album art</string>
+    <string name="default_title">press play to start…</string>
+    <string name="home_motivate">Just type your fav artist and start listen</string>
+    <string name="home_welcome">Welcome to VK radio</string>
+    <string name="next_song_wait">......</string>
+    <string name="preference_play_button">Play!</string>
+    <string name="new_radio_title">new radio</string>
+    <string name="add_radio_slide">Add</string>
+    <string name="back_hint">Double click Back to exit</string>
+    <string name="problems_header">Ooops, something going wrong!</string>
+</resources>

@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">vk радио</string>
+    <string name="play_str">PLAY</string>
+    <string name="next_str">NEXT</string>
+    <string name="pause_str">PAUSE</string>
+    <string name="set_preferences">Настройки</string>
+    <string name="radio_settings">Настройки радио</string>
+    <string name="image_hint">Обложка</string>
+    <string name="default_title">нажмите play…</string>
+    <string name="home_motivate">введи имя артиста и вперед</string>
+    <string name="home_welcome">VK радио</string>
+    <string name="next_song_wait">......</string>
+    <string name="preference_play_button">Включить радио!</string>
+    <string name="new_radio_title">новое радио</string>
+    <string name="add_radio_slide">Добавить</string>
+    <string name="back_hint">Нажмите ещё раз для выхода</string>
+    <string name="problems_header">Упс, что-то сломалось</string>
+</resources>
