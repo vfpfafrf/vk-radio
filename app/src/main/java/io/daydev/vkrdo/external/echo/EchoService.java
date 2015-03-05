@@ -80,11 +80,14 @@ public class EchoService {
                             params.setType(PlaylistParams.PlaylistType.GENRE_RADIO);
                         } else {
 
-                            if (radio.getMood() != null && !radio.getMood().isEmpty()) {
-                                params.addMood(radio.getMood());
-                            }
+
                             if (radio.getArtist() != null && !radio.getArtist().isEmpty()) {
                                 params.addArtist(radio.getArtist());
+
+                                if (radio.getMood() != null && !radio.getMood().isEmpty()) {
+                                    params.addMood(radio.getMood());
+                                }
+
                                 if (radio.getArtistLinkType() != null) {
                                     if (radio.getArtistLinkType().equals(RadioInfo.ArtistLinkType.LIMIT)) {
                                         params.setType(PlaylistParams.PlaylistType.ARTIST);
@@ -95,6 +98,14 @@ public class EchoService {
                             } else if (radio.getGenre() != null && !radio.getGenre().isEmpty()) {
                                 params.addGenre(radio.getGenre());
                                 params.setType(PlaylistParams.PlaylistType.GENRE_RADIO);
+                            }
+
+                            if (radio.getYearFrom() != null){
+                                params.setArtistStartYearAfter(radio.getYearFrom());
+                            }
+
+                            if (radio.getYearTo() != null){
+                                params.setArtistEndYearBefore(radio.getYearTo());
                             }
                         }
                         session = echoNest.createDynamicPlaylist(params);

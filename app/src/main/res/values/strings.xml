@@ -16,4 +16,16 @@
     <string name="add_radio_slide">Add</string>
     <string name="back_hint">Double click Back to exit</string>
     <string name="problems_header">Ooops, something going wrong!</string>
+    <string name="pref_genre">Radio genre</string>
+    <string name="pref_artist">Artist</string>
+    <string name="pref_title">Radio title</string>
+    <string name="pref_link">Link type</string>
+    <string name="pref_mood">Mood</string>
+    <string name="pref_category_artist">Artist</string>
+    <string name="pref_category_genre">Genre</string>
+    <string name="pref_category_common">Common</string>
+    <string name="pref_yf">Year from</string>
+    <string name="pref_years">Years</string>
+    <string name="pref_yt">Year to</string>
+    <string name="delete_pref_btn">Delete</string>
 </resources>

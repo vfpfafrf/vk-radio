@@ -16,4 +16,16 @@
     <string name="add_radio_slide">Добавить</string>
     <string name="back_hint">Нажмите ещё раз для выхода</string>
     <string name="problems_header">Упс, что-то сломалось</string>
+    <string name="pref_artist">Исполнитель</string>
+    <string name="pref_category_artist">Исполнитель радио</string>
+    <string name="pref_category_common">Общие</string>
+    <string name="pref_category_genre">Жанр</string>
+    <string name="pref_genre">Жанр радио</string>
+    <string name="pref_title">Название радио</string>
+    <string name="pref_link">Выбирать</string>
+    <string name="pref_mood">Настроение</string>
+    <string name="pref_yf">Год от</string>
+    <string name="pref_years">Десятилетие</string>
+    <string name="pref_yt">Год по</string>
+    <string name="delete_pref_btn">Удалить</string>
 </resources>

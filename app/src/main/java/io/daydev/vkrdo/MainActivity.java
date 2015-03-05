@@ -344,7 +344,8 @@ public class MainActivity extends Activity {
                     if (newRadio.getTitle() == null || newRadio.getTitle().isEmpty()) {
                         if (newRadio.getGenre() == null || newRadio.getGenre().isEmpty()) {
                             if (newRadio.getArtist() == null || newRadio.getArtist().isEmpty()) {
-                                newRadio.setTitle(getString(R.string.new_radio_title));
+                                //newRadio.setTitle(getString(R.string.new_radio_title));
+                                return; // do not save radio without artist and genre
                             } else {
                                 newRadio.setTitle(newRadio.getArtist());
                             }
@@ -369,7 +370,7 @@ public class MainActivity extends Activity {
                 if (oldRadio != null && !oldRadio.getTitle().equals(newRadio.getTitle())) {
                     if (navMenuTitles.contains(oldRadio.getTitle())) {
                         navMenuTitles.set(navMenuTitles.indexOf(oldRadio.getTitle()), newRadio.getTitle());
-                        slideAdapter.setIcon(oldRadio, android.R.drawable.ic_media_pause);
+                        slideAdapter.replace(oldRadio.getTitle(), new NavDrawerItem(newRadio.getTitle(), android.R.drawable.ic_media_pause));
                     } else {
                         navMenuTitles.add(newRadio.getTitle());
                         slideAdapter.add(new NavDrawerItem(newRadio.getTitle(), android.R.drawable.ic_media_pause));
@@ -379,6 +380,10 @@ public class MainActivity extends Activity {
                     slideAdapter.add(new NavDrawerItem(newRadio.getTitle(), android.R.drawable.ic_media_pause));
                 }
 
+                if (oldRadio != null && oldRadio.isSame(currentRadio)){
+                    currentRadio = newRadio;
+                    setTitle(currentRadio.getTitle());
+                }
                 //startNewRadio(newRadio.getTitle(), newRadio);
             }
         });
@@ -508,6 +513,7 @@ public class MainActivity extends Activity {
             if (radio != null && !radio.isEmpty()){
                 // if "magic" - display home screen
                 if (radio.equals(MediaEvent.MAGIC_HOME)){
+                    Log.e("omfg", "recv to home "+currentState);
                     if (!State.RADIO.equals(currentState)) {
                         if (configuration != null) {
                             displayView(-1);

@@ -10,9 +10,10 @@
             android:text="@string/preference_play_button"
             android:id="@+id/playButton" android:layout_gravity="center_horizontal" android:paddingLeft="40dp"
             android:paddingRight="40dp" android:layout_weight="1"/>
-    <ImageButton
+    <Button
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:id="@+id/delete_radio" android:src="@android:drawable/ic_delete"
-            android:layout_gravity="right" android:layout_weight="0.05"/>
+            android:id="@+id/delete_radio"
+            android:layout_gravity="right" android:layout_weight="0.05" android:text="@string/delete_pref_btn"
+            />
 </LinearLayout>

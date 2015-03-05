@@ -6,7 +6,6 @@ import android.util.AttributeSet;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
-import android.widget.ImageButton;
 import io.daydev.vkrdo.R;
 import io.daydev.vkrdo.util.Callback;
 
@@ -58,7 +57,7 @@ public class ButtonPreference extends Preference {
             });
         }
 
-        ImageButton delete = (ImageButton) view.findViewById(R.id.delete_radio);
+        Button delete = (Button) view.findViewById(R.id.delete_radio);
         if (delete != null){
             delete.setOnClickListener(new View.OnClickListener() {
                 @Override

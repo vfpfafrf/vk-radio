@@ -8,7 +8,6 @@ import android.os.Message;
 import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 import android.view.LayoutInflater;
-import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
@@ -102,12 +101,20 @@ public class RadioFragment extends Fragment implements Callback<Message>, Callba
 
 
         seekBar = (SeekBar) rootView.findViewById(R.id.SeekBar);
-        seekBar.setOnTouchListener(new View.OnTouchListener() {
+        seekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
-            public boolean onTouch(View v, MotionEvent event) {
-                SeekBar sb = (SeekBar) v;
-                sendToMediaService (MediaPlayerService.ACTION_SEEK, MediaPlayerService.EXTRA_SEEK, sb.getProgress());
-                return false;
+            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+
+            }
+
+            @Override
+            public void onStartTrackingTouch(SeekBar seekBar) {
+
+            }
+
+            @Override
+            public void onStopTrackingTouch(SeekBar seekBar) {
+                sendToMediaService (MediaPlayerService.ACTION_SEEK, MediaPlayerService.EXTRA_SEEK, seekBar.getProgress());
             }
         });
         seekBar.setProgress(0);
@@ -140,8 +147,9 @@ public class RadioFragment extends Fragment implements Callback<Message>, Callba
     private void sendToMediaService(String msg, String extra, Serializable extraValue){
         Intent intent = new Intent(getActivity(), MediaPlayerService.class);
         intent.setAction(msg);
+        intent.putExtra(MediaPlayerService.EXTRA_RADIO, radioInfo);
         if (extra != null && extraValue != null){
-            intent.putExtra(MediaPlayerService.EXTRA_RADIO, radioInfo);
+            intent.putExtra(extra, extraValue);
         }
         getActivity().startService(intent);
     }
