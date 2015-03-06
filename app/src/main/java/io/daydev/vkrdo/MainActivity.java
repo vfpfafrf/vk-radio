@@ -1,6 +1,8 @@
 package io.daydev.vkrdo;
 
-import android.app.*;
+import android.app.Fragment;
+import android.app.FragmentManager;
+import android.app.FragmentTransaction;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -19,6 +21,7 @@ import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ListView;
 import android.widget.Toast;
+import com.vk.sdk.VKUIHelper;
 import io.daydev.vkrdo.bean.RadioBuilder;
 import io.daydev.vkrdo.bean.RadioInfo;
 import io.daydev.vkrdo.external.ConfigurationHolder;
@@ -27,21 +30,17 @@ import io.daydev.vkrdo.preference.PreferenceHelper;
 import io.daydev.vkrdo.service.MediaPlayerService;
 import io.daydev.vkrdo.slide.NavDrawerItem;
 import io.daydev.vkrdo.slide.NavDrawerListAdapter;
+import io.daydev.vkrdo.slide.SlidePreferencesHelper;
 import io.daydev.vkrdo.util.Callback;
 import io.daydev.vkrdo.util.CallbackChecker;
 import io.daydev.vkrdo.util.ResultTuple;
 import io.daydev.vkrdo.util.Tuple;
-import com.vk.sdk.*;
-import com.vk.sdk.api.VKError;
-import com.vk.sdk.dialogs.VKCaptchaDialog;
 
 import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
-public class MainActivity extends Activity {
+public class MainActivity extends VKActivity implements MediaEvent {
 
     private static final String PREF_NAME = "vkrdo";
     private static final String PREF_RADIO = "myradio";
@@ -57,14 +56,7 @@ public class MainActivity extends Activity {
     private CharSequence mTitle;
 
     // slide menu items
-    private List<String> navMenuTitles;
-    private Map<String, RadioInfo> radios;
-    private Map<String, RadioInfo> preferencesMap;
-
-    private static final String[] sMyScope = new String[]{
-            VKScope.AUDIO,
-            VKScope.OFFLINE
-    };
+    private SlidePreferencesHelper slidePreferencesHelper;
 
     private Callback<Message> currentFragmentCallback;
     private CallbackChecker<RadioInfo> currentFragmentRadioChecker;
@@ -73,9 +65,10 @@ public class MainActivity extends Activity {
     private NavDrawerListAdapter slideAdapter;
 
 
-    private enum State{
+    private enum State {
         HOME, SETTINGS, RADIO
     }
+
     private State currentState;
 
     private boolean preventBack = false;
@@ -88,20 +81,19 @@ public class MainActivity extends Activity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.main);
 
-        if (configuration == null){
+        if (configuration == null) {
             ConfigurationHolder task = new ConfigurationHolder();
-            task.load(CONFIG, new Callback<ResultTuple<io.daydev.vkrdo.bean.Configuration>>(){
+            task.load(CONFIG, new Callback<ResultTuple<io.daydev.vkrdo.bean.Configuration>>() {
                 @Override
                 public void callback(ResultTuple<io.daydev.vkrdo.bean.Configuration> result) {
-                    if (result != null && result.hasResult()){
+                    if (result != null && result.hasResult()) {
                         configuration = result.getResult();
-                    }  else {
+                    } else {
                         displayError(result == null ? "" : result.getError());
                     }
                 }
             });
         }
-
 
         LocalBroadcastManager.getInstance(this).registerReceiver(mMessageReceiver, new IntentFilter(MediaEvent.EVENT));
 
@@ -113,35 +105,23 @@ public class MainActivity extends Activity {
         intent.setAction(MediaPlayerService.ACTION_STATUS);
         startService(intent);
 
-
         mTitle = mDrawerTitle = getTitle();
         currentState = null;
         preventBack = false;
-        radios = new HashMap<>();
-        navMenuTitles = new ArrayList<>();
 
-       // PreferenceHelper.clean(getSharedPreferences(PREF_NAME, MODE_PRIVATE), PREF_RADIO);
-        preferencesMap = PreferenceHelper.getMap(getSharedPreferences(PREF_NAME, MODE_PRIVATE), PREF_RADIO);
-        if (preferencesMap == null){
-            preferencesMap = new HashMap<>();
-        }
-
-        radios.putAll(preferencesMap);
-        for (Map.Entry<String, RadioInfo> me : preferencesMap.entrySet()){
-            navMenuTitles.add(me.getValue().getTitle());
-        }
+        // PreferenceHelper.clean(getSharedPreferences(PREF_NAME, MODE_PRIVATE), PREF_RADIO);
+        slidePreferencesHelper = new SlidePreferencesHelper();
+        slidePreferencesHelper.onCreate(PreferenceHelper.getMap(getSharedPreferences(PREF_NAME, MODE_PRIVATE), PREF_RADIO));
 
         mDrawerLayout = (DrawerLayout) findViewById(R.id.drawer_layout);
         mDrawerList = (ListView) findViewById(R.id.list_slidermenu);
 
-        ArrayList<NavDrawerItem> navDrawerItems = new ArrayList<>();
-
-        navDrawerItems.add(new NavDrawerItem(getString(R.string.add_radio_slide), android.R.drawable.ic_input_add));
-        for (String nav : navMenuTitles) {
-            navDrawerItems.add(new NavDrawerItem(nav, -1));
-        }
 
         mDrawerList.setOnItemClickListener(new SlideMenuClickListener());
+
+        List<NavDrawerItem> navDrawerItems = new ArrayList<>();
+        navDrawerItems.add(new NavDrawerItem(getString(R.string.add_radio_slide), android.R.drawable.ic_input_add));
+        navDrawerItems.addAll(slidePreferencesHelper.convertToNavDrawItems());
 
         // setting the nav drawer list adapter
         slideAdapter = new NavDrawerListAdapter(getApplicationContext(), navDrawerItems);
@@ -176,7 +156,6 @@ public class MainActivity extends Activity {
 
         if (savedInstanceState == null) {
             // on first time display view for first nav item
-            //displayView(-1);
             SplashFragment fragment = new SplashFragment();
             FragmentManager fragmentManager = getFragmentManager();
             fragmentManager
@@ -185,7 +164,6 @@ public class MainActivity extends Activity {
                     .commit();
         }
         VKUIHelper.onCreate(this);
-
     }
 
 
@@ -252,13 +230,7 @@ public class MainActivity extends Activity {
 
         switch (position) {
             case -1:
-                VKSdk.initialize(sdkListener, configuration.getVkApp());
-                if (!VKSdk.wakeUpSession()) {
-                    //return;
-                    VKSdk.authorize(new String[]{VKScope.AUDIO, VKScope.OFFLINE}, true, false);
-                }
-
-
+                initSdk(configuration);
                 fragment = new HomeFragment();
                 currentState = State.HOME;
                 break;
@@ -267,19 +239,20 @@ public class MainActivity extends Activity {
                 title = getString(R.string.new_radio_title);
                 break;
             default:
-                    currentState = State.RADIO;
-                    fragment = new RadioFragment();
-                    currentFragmentCallback = (Callback<Message>) fragment;
-                    currentFragmentRadioChecker = (CallbackChecker<RadioInfo>) fragment;
-                    title = navMenuTitles.get(position - 1);
+                currentState = State.RADIO;
+                fragment = new RadioFragment();
+                currentFragmentCallback = (Callback<Message>) fragment;
+                currentFragmentRadioChecker = (CallbackChecker<RadioInfo>) fragment;
 
-                    currentRadio = radios.get(title);
-                    bundle = new Bundle();
-                    bundle.putSerializable(RadioFragment.RADIO_PARAM, currentRadio);
-                    if (extra != null){
-                        bundle.putSerializable(RadioFragment.EXTRA_PARAM, extra);
-                    }
-                    slideAdapter.setIcon(currentRadio, android.R.drawable.ic_media_pause);
+                currentRadio = slidePreferencesHelper.getByPosition(position-1);
+                title = currentRadio.getTitle();
+
+                bundle = new Bundle();
+                bundle.putSerializable(RadioFragment.RADIO_PARAM, currentRadio);
+                if (extra != null) {
+                    bundle.putSerializable(RadioFragment.EXTRA_PARAM, extra);
+                }
+                slideAdapter.setIcon(currentRadio, android.R.drawable.ic_media_pause);
         }
 
         if (bundle != null) {
@@ -288,19 +261,19 @@ public class MainActivity extends Activity {
         if (fragment != null) {
             try {
                 FragmentManager fragmentManager = getFragmentManager();
-                FragmentTransaction transaction =fragmentManager
+                FragmentTransaction transaction = fragmentManager
                         .beginTransaction()
                         .replace(R.id.frame_container, fragment)
                         .addToBackStack(null);
 
                 //stupid fix for this http://stackoverflow.com/questions/7575921/illegalstateexception-can-not-perform-this-action-after-onsaveinstancestate-h
-                if (fragment instanceof RadioFragment){
+                if (fragment instanceof RadioFragment) {
                     transaction.commit();
                 } else {
                     transaction.commitAllowingStateLoss();
                 }
-            }catch (Exception e){
-                Log.e("omfg", "displayView", e);
+            } catch (Exception e) {
+                Log.e("MainActivity", "displayView", e);
                 return;
             }
         }
@@ -315,8 +288,8 @@ public class MainActivity extends Activity {
         mDrawerLayout.closeDrawer(mDrawerList);
     }
 
-    private void radioSettings(RadioInfo radioInfo){
-        if (State.SETTINGS.equals(currentState)){
+    private void radioSettings(RadioInfo radioInfo) {
+        if (State.SETTINGS.equals(currentState)) {
             return;
         }
         slideAdapter.setIcon(radioInfo, android.R.drawable.ic_menu_preferences);
@@ -338,47 +311,13 @@ public class MainActivity extends Activity {
             public void callback(Tuple<RadioInfo, RadioInfo> obj) {
                 RadioInfo oldRadio = obj.getFirst();
                 RadioInfo newRadio = obj.getSecond();
-                if (oldRadio == null) {
-                    if (newRadio.getTitle() == null || newRadio.getTitle().isEmpty()) {
-                        if (newRadio.getGenre() == null || newRadio.getGenre().isEmpty()) {
-                            if (newRadio.getArtist() == null || newRadio.getArtist().isEmpty()) {
-                                //newRadio.setTitle(getString(R.string.new_radio_title));
-                                return; // do not save radio without artist and genre
-                            } else {
-                                newRadio.setTitle(newRadio.getArtist());
-                            }
-                        } else {
-                            newRadio.setTitle(newRadio.getGenre());
-                        }
-                    }
 
-                    int i = 1;
-                    while (radios.containsKey(newRadio.getTitle())) {
-                        newRadio.setTitle(newRadio.getTitle() + " " + i++);
-                    }
-                } else {
-                    radios.remove(oldRadio.getTitle());
-                    preferencesMap.remove(oldRadio.getTitle());
+                if (!slidePreferencesHelper.addOrReplace(oldRadio, newRadio, slideAdapter)){
+                    return;
                 }
+                PreferenceHelper.saveMap(getSharedPreferences(PREF_NAME, MODE_PRIVATE), PREF_RADIO, slidePreferencesHelper.getPreferencesMap());
 
-                radios.put(newRadio.getTitle(), newRadio);
-                preferencesMap.put(newRadio.getTitle(), newRadio);
-                PreferenceHelper.saveMap(getSharedPreferences(PREF_NAME, MODE_PRIVATE), PREF_RADIO, preferencesMap);
-
-                if (oldRadio != null && !oldRadio.getTitle().equals(newRadio.getTitle())) {
-                    if (navMenuTitles.contains(oldRadio.getTitle())) {
-                        navMenuTitles.set(navMenuTitles.indexOf(oldRadio.getTitle()), newRadio.getTitle());
-                        slideAdapter.replace(oldRadio.getTitle(), new NavDrawerItem(newRadio.getTitle(), android.R.drawable.ic_media_pause));
-                    } else {
-                        navMenuTitles.add(newRadio.getTitle());
-                        slideAdapter.add(new NavDrawerItem(newRadio.getTitle(), android.R.drawable.ic_media_pause));
-                    }
-                } else if (oldRadio == null){
-                    navMenuTitles.add(newRadio.getTitle());
-                    slideAdapter.add(new NavDrawerItem(newRadio.getTitle(), android.R.drawable.ic_media_pause));
-                }
-
-                if (oldRadio != null && oldRadio.isSame(currentRadio)){
+                if (oldRadio != null && oldRadio.isSame(currentRadio)) {
                     currentRadio = newRadio;
                     setTitle(currentRadio.getTitle());
                 }
@@ -387,17 +326,6 @@ public class MainActivity extends Activity {
         });
     }
 
-    private void startNewRadio(String radio, RadioInfo radioInfo){
-        radios.put(radio, radioInfo);
-
-        if (!navMenuTitles.contains(radio)){
-            navMenuTitles.add(radio);
-            slideAdapter.add(new NavDrawerItem(radio, android.R.drawable.ic_media_pause));
-            displayView(navMenuTitles.indexOf(radio)+1);
-        } else {
-            displayView(navMenuTitles.size());
-        }
-    }
 
     @Override
     public void setTitle(CharSequence title) {
@@ -426,164 +354,139 @@ public class MainActivity extends Activity {
         mDrawerToggle.onConfigurationChanged(newConfig);
     }
 
-
     @Override
     protected void onDestroy() {
-        super.onStop();
-        VKUIHelper.onDestroy(this);
+        super.onDestroy();
         LocalBroadcastManager.getInstance(this).unregisterReceiver(mMessageReceiver);
     }
-
-    @Override
-    protected void onResume() {
-        super.onResume();
-        VKUIHelper.onResume(this);
-    }
-
-    @Override
-    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
-        try {
-            VKUIHelper.onActivityResult(this, requestCode, resultCode, data);
-        }catch (Exception e){
-            Log.e("MainActivity", "VK error", e);
-        }
-    }
-
-    private final VKSdkListener sdkListener = new VKSdkListener() {
-        @Override
-        public void onCaptchaError(VKError captchaError) {
-            new VKCaptchaDialog(captchaError).show();
-        }
-
-        @Override
-        public void onTokenExpired(VKAccessToken expiredToken) {
-            VKSdk.authorize(sMyScope);
-        }
-
-        @Override
-        public void onAccessDenied(final VKError authorizationError) {
-            new AlertDialog.Builder(VKUIHelper.getTopActivity())
-                    .setMessage(authorizationError.toString())
-                    .show();
-        }
-
-        @Override
-        public void onReceiveNewToken(VKAccessToken newToken) {
-        }
-
-        @Override
-        public void onAcceptUserToken(VKAccessToken token) {
-        }
-    };
-
 
     private BroadcastReceiver mMessageReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
-            // display error
-            String globalError = intent.getStringExtra(MediaEvent.GLOBAL_ERROR);
-            if (globalError != null && !globalError.isEmpty()){
-                displayError(globalError);
+            String type = intent.getStringExtra(TYPE);
+            if (type == null || type.isEmpty()) {
                 return;
             }
 
-            // remove radio and go to home
-            String radioRemove = intent.getStringExtra(MediaEvent.RADIO_REMOVE);
-            if (radioRemove != null && !radioRemove.isEmpty()){
-                // if "magic" - display home screen - mean remove not saved radio
-                if (!radioRemove.equals(MediaEvent.MAGIC_HOME)) {
-                    navMenuTitles.remove(radioRemove);
-                    radios.remove(radioRemove);
-                    preferencesMap.remove(radioRemove);
-                    PreferenceHelper.saveMap(getSharedPreferences(PREF_NAME, MODE_PRIVATE), PREF_RADIO, preferencesMap);
-                    slideAdapter.removeItem(radioRemove);
-                }
-
-                displayView(-1);
-                return;
-            }
-
-            // setup header title
-            String radioTitle = intent.getStringExtra(MediaEvent.RADIO_TITLE);
-            if (radioTitle != null && !radioTitle.isEmpty()){
-                setTitle(radioTitle);
-                int position = navMenuTitles.indexOf(radioTitle)+1;
-                mDrawerList.setItemChecked(position, true);
-                mDrawerList.setSelection(position);
-            }
-
-            // display and maybe play radio
-            String radio = intent.getStringExtra(MediaEvent.SIMPLE_RADIO);
-            if (radio != null && !radio.isEmpty()){
-                // if "magic" - display home screen
-                if (radio.equals(MediaEvent.MAGIC_HOME)){
-                    if (!State.RADIO.equals(currentState)) {
-                        if (configuration != null) {
-                            displayView(-1);
-                        }
+            switch (type) {
+                case GLOBAL_ERROR:
+                    // display error
+                    String globalError = intent.getStringExtra(GLOBAL_ERROR);
+                    if (globalError != null && !globalError.isEmpty()) {
+                        displayError(globalError);
                     }
-                    return;
-                }
+                    break;
 
-                RadioInfo radioInfo = (RadioInfo) intent.getSerializableExtra(MediaEvent.REAL_RADIO);
-
-                if (radioInfo == null) {
-                    //setup "virtual" radio - do not save it!
-                    startNewRadio(radio, RadioBuilder.getInstance()
-                            .setTitle(radio)
-                            .setArtist(radio)
-                            .setArtistLinkType(RadioInfo.ArtistLinkType.LIMIT)
-                            .build());
-                }else {
-                    // display current radio & play it
-                    displayView(navMenuTitles.indexOf(radioInfo.getTitle())+1, RadioFragment.EXTRA_PLAY);
-                }
-            } else {
-                // currently played event from media service
-                RadioInfo radioSource = (RadioInfo) intent.getSerializableExtra(MediaEvent.DATA_RADIO);
-                if (radioSource != null) {
-
-                    // if no settings then goto radio fragment
-                    if (currentFragmentRadioChecker == null && !State.SETTINGS.equals(currentState)) {
-                        displayView(navMenuTitles.indexOf(radioSource.getTitle()) + 1);
-                    }
-
-                    // setup icon if it pause/stop event
-                    int message = intent.getIntExtra(MediaEvent.DATA_MESSAGE_CODE, 1);
-                    switch (message) {
-                        case MediaPlayerService.MSG_STOP:
-                        case MediaPlayerService.MSG_PAUSE:
-                            slideAdapter.setIcon(radioSource, android.R.drawable.ic_media_pause);
-                            break;
-                        case MediaPlayerService.MSG_PLAY:
-                        case MediaPlayerService.MSG_PROGRESS:
-                        case MediaPlayerService.MSG_SEEK:
-                            slideAdapter.setIcon(radioSource, android.R.drawable.ic_media_play);
-                            break;
-                    }
-
-                    // next processing by current radio fragment
-                    if (currentFragmentRadioChecker != null && currentFragmentCallback != null && currentFragmentRadioChecker.check(radioSource)) {
-                        Message msg = new Message();
-
-                        msg.what = message;
-                        msg.obj = intent.getSerializableExtra(MediaEvent.DATA_SERIALIZEBLE);
-                        if (msg.obj == null) {
-                            msg.obj = intent.getParcelableExtra(MediaEvent.DATA_PARCEABLE);
+                case RADIO_REMOVE:
+                    // remove radio and go to home
+                    String radioRemove = intent.getStringExtra(RADIO_REMOVE);
+                    if (radioRemove != null && !radioRemove.isEmpty()) {
+                        // if "magic" - display home screen - mean remove not saved radio
+                        if (!radioRemove.equals(MAGIC_HOME)) {
+                            slidePreferencesHelper.remove(radioRemove, slideAdapter);
+                            PreferenceHelper.saveMap(getSharedPreferences(PREF_NAME, MODE_PRIVATE), PREF_RADIO, slidePreferencesHelper.getPreferencesMap());
                         }
 
-                        currentFragmentCallback.callback(msg);
+                        displayView(-1);
                     }
-                }
+                    break;
+
+                case SIMPLE_RADIO:
+                    // display and maybe play radio
+                    String radio = intent.getStringExtra(SIMPLE_RADIO);
+                    Integer position = null;
+                    String extra = null;
+                    if (radio != null && !radio.isEmpty()) {
+                        // if "magic" - display home screen
+                        if (radio.equals(MAGIC_HOME)) {
+                            if (!State.RADIO.equals(currentState) && configuration != null) {
+                                position = -1;
+                            }
+                        } else {
+                            RadioInfo radioInfo = (RadioInfo) intent.getSerializableExtra(REAL_RADIO);
+                            if (radioInfo == null) {
+                                //setup "virtual" radio - do not save it!
+                                radioInfo = RadioBuilder.getInstance()
+                                        .setTitle(radio)
+                                        .setArtist(radio)
+                                        .setArtistLinkType(RadioInfo.ArtistLinkType.LIMIT)
+                                        .build();
+
+                                if (slidePreferencesHelper.addWithoutPreferences(radioInfo, slideAdapter)) {
+                                    position = slidePreferencesHelper.position(radioInfo) + 1;
+                                } else {
+                                    position = slidePreferencesHelper.getNavMenuSize();
+                                }
+                            } else {
+                                // display current radio & play it
+                                position = slidePreferencesHelper.position(radioInfo) + 1;
+                                extra = RadioFragment.EXTRA_PLAY;
+                            }
+                        }
+                    }
+                    if (position != null){
+                        displayView(position, extra);
+                    }
+                    break;
+
+                case RADIO_TITLE:
+                    // setup header title
+                    String radioTitle = intent.getStringExtra(RADIO_TITLE);
+                    if (radioTitle != null && !radioTitle.isEmpty()) {
+                        setTitle(radioTitle);
+                        int pos = slidePreferencesHelper.position(radioTitle) + 1;
+                        mDrawerList.setItemChecked(pos, true);
+                        mDrawerList.setSelection(pos);
+                    }
+                    break;
+
+                default:
+                    // currently played event from media service
+                    RadioInfo radioSource = (RadioInfo) intent.getSerializableExtra(MediaEvent.DATA_RADIO);
+                    if (radioSource != null) {
+
+                        // if no settings then goto radio fragment
+                        if (currentFragmentRadioChecker == null && !State.SETTINGS.equals(currentState)) {
+                            displayView(slidePreferencesHelper.position(radioSource) + 1);
+                        }
+
+                        // setup icon if it pause/stop event
+                        int message = intent.getIntExtra(MediaEvent.DATA_MESSAGE_CODE, 1);
+                        switch (message) {
+                            case MediaPlayerService.MSG_STOP:
+                            case MediaPlayerService.MSG_PAUSE:
+                                slideAdapter.setIcon(radioSource, android.R.drawable.ic_media_pause);
+                                break;
+                            case MediaPlayerService.MSG_PLAY:
+                            case MediaPlayerService.MSG_PROGRESS:
+                            case MediaPlayerService.MSG_SEEK:
+                                slideAdapter.setIcon(radioSource, android.R.drawable.ic_media_play);
+                                break;
+                        }
+
+                        // next processing by current radio fragment
+                        if (currentFragmentRadioChecker != null && currentFragmentCallback != null && currentFragmentRadioChecker.check(radioSource)) {
+                            Message msg = new Message();
+
+                            msg.what = message;
+                            msg.obj = intent.getSerializableExtra(MediaEvent.DATA_SERIALIZEBLE);
+                            if (msg.obj == null) {
+                                msg.obj = intent.getParcelableExtra(MediaEvent.DATA_PARCEABLE);
+                            }
+
+                            currentFragmentCallback.callback(msg);
+                        }
+                    }
             }
+
         }
     };
 
     private boolean doubleBackToExitPressedOnce;
+
     @Override
     public void onBackPressed() {
-        if (preventBack){
+        if (preventBack) {
             return;
         }
 
@@ -591,12 +494,12 @@ public class MainActivity extends Activity {
         if (fm.getBackStackEntryCount() > 0) {
             fm.popBackStackImmediate();
             Fragment f = getFragmentManager().findFragmentById(R.id.frame_container);
-            if (f instanceof RadioFragment){
+            if (f instanceof RadioFragment) {
                 currentState = State.RADIO;
                 slideAdapter.setIcon(currentRadio, android.R.drawable.ic_media_pause);
-            } else if (f instanceof RadioPreferencesFragment){
+            } else if (f instanceof RadioPreferencesFragment) {
                 currentState = State.SETTINGS;
-            } else if (f instanceof HomeFragment){
+            } else if (f instanceof HomeFragment) {
                 currentState = State.HOME;
                 setTitle(R.string.app_name);
                 mDrawerList.clearChoices();
@@ -614,13 +517,13 @@ public class MainActivity extends Activity {
 
                 @Override
                 public void run() {
-                    doubleBackToExitPressedOnce=false;
+                    doubleBackToExitPressedOnce = false;
                 }
             }, 2000);
         }
     }
 
-    private void displayError(String description){
+    private void displayError(String description) {
         ErrorFragment fragment = new ErrorFragment();
         Bundle bundle = new Bundle();
         bundle.putSerializable(ErrorFragment.ERROR_DESCRIPTION, description);

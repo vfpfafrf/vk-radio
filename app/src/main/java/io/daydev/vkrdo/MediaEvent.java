@@ -7,12 +7,16 @@ public interface MediaEvent {
 
     public static final String EVENT = "media-event";
 
+    public static final String TYPE = "event-type";
+
     public static final String GLOBAL_ERROR = "global-error";
 
     public static final String SIMPLE_RADIO = "simple-radio";
     public static final String REAL_RADIO = "real-radio";
     public static final String RADIO_TITLE = "radio-title";
     public static final String RADIO_REMOVE = "radio-remove";
+
+    public static final String MEDIAPLAYER_COMMAND = "media-command";
 
     /**
      * "magic" home screen radio const

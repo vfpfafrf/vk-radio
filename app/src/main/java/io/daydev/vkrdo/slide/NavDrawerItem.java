@@ -1,9 +1,15 @@
 package io.daydev.vkrdo.slide;
 
+import io.daydev.vkrdo.bean.RadioInfo;
+
 /**
  * Created by dmitry on 03.03.15.
  */
 public class NavDrawerItem {
+
+    public static NavDrawerItem generate(RadioInfo radioInfo){
+        return new NavDrawerItem(radioInfo.getTitle(), android.R.drawable.ic_media_pause);
+    }
 
     private String title;
     private int icon;

@@ -42,7 +42,7 @@ public class PlayListService extends AbstractLocalBinderService implements PlayL
     private Callback<SongInfo> callback;
     private CallbackChecker<SongInfo> callbackChecker;
 
-    private RadioInfo currentRadio;
+    private volatile RadioInfo currentRadio;
     private SongInfo currentSong;
 
     private Handler resolverHandler;

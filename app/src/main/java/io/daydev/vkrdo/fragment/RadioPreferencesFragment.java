@@ -122,12 +122,14 @@ public class RadioPreferencesFragment extends PreferenceFragment {
                         radioInfo = RadioBuilder.buildDefault();
                     }
                     Intent intent = new Intent(MediaEvent.EVENT);
+                    intent.putExtra(MediaEvent.TYPE, MediaEvent.SIMPLE_RADIO);
                     intent.putExtra(MediaEvent.SIMPLE_RADIO, radioInfo.getTitle());
                     intent.putExtra(MediaEvent.REAL_RADIO, radioInfo);
                     LocalBroadcastManager.getInstance(RadioPreferencesFragment.this.getActivity()).sendBroadcast(intent);
                 } else if (obj.equalsIgnoreCase(ButtonPreference.CMD_REMOVE)) {
                     //remove radio and go to home screen
                     Intent intent = new Intent(MediaEvent.EVENT);
+                    intent.putExtra(MediaEvent.TYPE, MediaEvent.RADIO_REMOVE);
                     intent.putExtra(MediaEvent.RADIO_REMOVE, radioInfo == null ? MediaEvent.MAGIC_HOME : radioInfo.getTitle());
                     LocalBroadcastManager.getInstance(RadioPreferencesFragment.this.getActivity()).sendBroadcast(intent);
                 }

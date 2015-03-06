@@ -11,14 +11,14 @@ import android.widget.TextView;
 import io.daydev.vkrdo.R;
 import io.daydev.vkrdo.bean.RadioInfo;
 
-import java.util.ArrayList;
+import java.util.List;
 
 public class NavDrawerListAdapter extends BaseAdapter {
 
     private Context context;
-    private ArrayList<NavDrawerItem> navDrawerItems;
+    private List<NavDrawerItem> navDrawerItems;
 
-    public NavDrawerListAdapter(Context context, ArrayList<NavDrawerItem> navDrawerItems){
+    public NavDrawerListAdapter(Context context, List<NavDrawerItem> navDrawerItems){
         this.context = context;
         this.navDrawerItems = navDrawerItems;
     }

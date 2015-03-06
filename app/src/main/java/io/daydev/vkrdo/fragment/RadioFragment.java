@@ -75,6 +75,7 @@ public class RadioFragment extends Fragment implements Callback<Message>, Callba
             radioInfo = (RadioInfo) arguments.getSerializable(RADIO_PARAM);
 
             Intent intent = new Intent(MediaEvent.EVENT);
+            intent.putExtra(MediaEvent.TYPE, MediaEvent.RADIO_TITLE);
             intent.putExtra(MediaEvent.RADIO_TITLE, radioInfo.getTitle());
             LocalBroadcastManager.getInstance(this.getActivity()).sendBroadcast(intent);
         }

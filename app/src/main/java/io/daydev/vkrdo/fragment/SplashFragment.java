@@ -27,6 +27,7 @@ public class SplashFragment extends Fragment {
             @Override
             public void run() {
                 Intent intent = new Intent(MediaEvent.EVENT);
+                intent.putExtra(MediaEvent.TYPE, MediaEvent.SIMPLE_RADIO);
                 intent.putExtra(MediaEvent.SIMPLE_RADIO, MediaEvent.MAGIC_HOME);
                 LocalBroadcastManager.getInstance(SplashFragment.this.getActivity()).sendBroadcast(intent);
             }

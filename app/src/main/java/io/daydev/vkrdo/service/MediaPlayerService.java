@@ -404,6 +404,8 @@ public class MediaPlayerService extends AbstractLocalBinderService implements Me
      */
     protected void sendMessage(int msg, Object data) {
         Intent intent = new Intent(MediaEvent.EVENT);
+        intent.putExtra(MediaEvent.TYPE, MediaEvent.MEDIAPLAYER_COMMAND);
+
         intent.putExtra(MediaEvent.DATA_RADIO, playListService.getCurrentRadio());
         intent.putExtra(MediaEvent.DATA_MESSAGE_CODE, msg);
         if (data instanceof Serializable) {
@@ -417,6 +419,7 @@ public class MediaPlayerService extends AbstractLocalBinderService implements Me
 
     protected void sendError(String error){
         Intent intent = new Intent(MediaEvent.EVENT);
+        intent.putExtra(MediaEvent.TYPE, MediaEvent.GLOBAL_ERROR);
         intent.putExtra(MediaEvent.GLOBAL_ERROR, error);
 
         LocalBroadcastManager.getInstance(this).sendBroadcast(intent);

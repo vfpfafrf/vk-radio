@@ -17,7 +17,7 @@ public class HomeFragment extends Fragment {
 
 
     @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container,
+    public View onCreateView(final LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
 
         View rootView = inflater.inflate(R.layout.home, container, false);
@@ -34,6 +34,7 @@ public class HomeFragment extends Fragment {
                 }
 
                 Intent intent = new Intent(MediaEvent.EVENT);
+                intent.putExtra(MediaEvent.TYPE, MediaEvent.SIMPLE_RADIO);
                 intent.putExtra(MediaEvent.SIMPLE_RADIO, artist);
                 LocalBroadcastManager.getInstance(HomeFragment.this.getActivity()).sendBroadcast(intent);
             }
