@@ -32,17 +32,7 @@ import java.io.Serializable;
 /**
  * MediaPlayerService
  */
-public class MediaPlayerService extends AbstractLocalBinderService implements Callback<SongInfo>, CallbackChecker<SongInfo>, ServiceConnection {
-
-    public static final String ACTION_EMPTY = "action_empty";
-    public static final String ACTION_PLAY = "action_play";
-    public static final String ACTION_PAUSE = "action_pause";
-    public static final String ACTION_NEXT = "action_next";
-    public static final String ACTION_PREVIOUS = "action_previous";
-    public static final String ACTION_STOP = "action_stop";
-    public static final String ACTION_GENRE = "action_genre";
-    public static final String ACTION_SEEK = "action_seek";
-    public static final String ACTION_STATUS = "action_status";
+public class MediaPlayerService extends AbstractLocalBinderService implements MediaPlayerEvents, Callback<SongInfo>, CallbackChecker<SongInfo>, ServiceConnection {
 
     public static final String EXTRA_RADIO = "vk.radio";
     public static final String EXTRA_SEEK = "extra.seek";
@@ -54,10 +44,6 @@ public class MediaPlayerService extends AbstractLocalBinderService implements Ca
 
     private PlayListService playListService;
     private boolean playListServiceBound = false;
-
-    private volatile boolean waiting = false;
-    private volatile boolean paused = false;
-    private RadioInfo radio;
 
     public static final int MSG_TRACK_LIST_CHANGES = 3;
     public static final int MSG_SET_DURATION = 4;
@@ -87,11 +73,15 @@ public class MediaPlayerService extends AbstractLocalBinderService implements Ca
 
         String action = intent.getAction().toLowerCase();
         MediaController.TransportControls controls = mediaController.getTransportControls();
+
         switch (action) {
             case ACTION_PLAY:
-                if (playListService.generate(radio)) {
-                    playListService.setCallback(this);
-                    playListService.setCallbackChecker(this);
+                RadioInfo radio = (RadioInfo) intent.getSerializableExtra(EXTRA_RADIO);
+                if (radio != null) {
+                    if (playListService.generate(radio)) {
+                        playListService.setCallback(this);
+                        playListService.setCallbackChecker(this);
+                    }
                 }
                 controls.play();
                 break;
@@ -105,22 +95,13 @@ public class MediaPlayerService extends AbstractLocalBinderService implements Ca
                 controls.skipToPrevious();
                 break;
             case ACTION_NEXT:
-                if (!waiting) {
-                    controls.skipToNext();
-                }
-                break;
-            case ACTION_GENRE:
-                if (radio != null) {
-                    sendMessage(MSG_STOP, null); // send message - current radio stop playing....
-                    controls.stop();  // and realy stop
-                }
-                radio = (RadioInfo) intent.getSerializableExtra(EXTRA_RADIO);
+                controls.skipToNext();
                 break;
             case ACTION_SEEK:
                 try {
                     Integer seek = (Integer) intent.getSerializableExtra(EXTRA_SEEK);
-                    if (seek != null && mediaPlayer != null && mediaPlayer.isPlaying()) {
-                        mediaPlayer.seekTo(seek);
+                    if (seek != null) {
+                        controls.seekTo(seek);
                     }
                 } catch (Exception e) {
                     Log.e("MediaPLayerService", "while seekTo", e);
@@ -170,12 +151,12 @@ public class MediaPlayerService extends AbstractLocalBinderService implements Ca
     }
 
     private void initMediaSessions() {
-        mediaNotification = new MediaNotification(this, ACTION_PLAY, ACTION_PAUSE, ACTION_STOP, ACTION_NEXT);
+        mediaNotification = new MediaNotification(this);
         mediaNotification.setBitmapCallback(new MediaNotificationCallback() {
             @Override
             public boolean imageCheck(SongInfo song, Bitmap image) {
                 SongInfo current = playListService.getCurrent();
-                return song != null && song.equals(current);
+                return song != null && current != null && song.equals(current);
             }
 
             @Override
@@ -184,140 +165,162 @@ public class MediaPlayerService extends AbstractLocalBinderService implements Ca
             }
         });
 
+        mediaPlayer = new MediaPlayer();
+        mediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
+        mediaPlayer.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
+            @Override
+            public void onCompletion(MediaPlayer mp) {
+                Log.w("mediaPlayer", "------------------------on complete--------");
+                mediaController.getTransportControls().skipToNext();
+            }
+        });
+        mediaPlayer.setOnErrorListener(new MediaPlayer.OnErrorListener() {
+            @Override
+            public boolean onError(MediaPlayer mp, int what, int extra) {
+                Log.e("OMFG", "Ahtung ahtung"+what+" "+extra);
+                sendError("MediaPlayer error what="+what+" extra="+extra);
+                return false; //todo: handle error and return true)
+            }
+        });
+
         mediaSession = new MediaSession(getApplicationContext(), "VK radio media session");
         mediaController = new MediaController(getApplicationContext(), mediaSession.getSessionToken());
         mediaSession.setCallback(new MediaSession.Callback() {
 
-                                     private final Handler handler = new Handler();
+            private volatile boolean paused = false;
 
-                                     private final Runnable progressNotification = new Runnable() {
-                                         public void run() {
-                                             try {
-                                                 sendMessage(MSG_PROGRESS, mediaPlayer.getCurrentPosition());
-                                                 if (mediaPlayer != null && mediaPlayer.isPlaying()) {
-                                                     handler.postDelayed(progressNotification, 1000);
-                                                 }
-                                             } catch (Exception e) {
-                                                 Log.e("MediaPlayerService", "progressNotifycation", e);
-                                             }
-                                         }
-                                     };
+            private final Handler handler = new Handler();
 
-                                     @Override
-                                     public void onPlay() {
-                                         super.onPlay();
-                                         Log.e("MediaPlayerService", "onPlay");
-                                         if (paused) { //resume from paused
-                                             try {
-                                                 if (mediaPlayer != null) {
-                                                     mediaPlayer.start();
-                                                 }
-                                             } catch (IllegalStateException ignore) {
-                                                 //
-                                             }
-                                         }
-                                         paused = false;
-                                         playNext();
-                                     }
+            private final Runnable progressNotification = new Runnable() {
+                public void run() {
+                    try {
+                        if (mediaPlayer != null) {
+                            sendMessage(MSG_PROGRESS, mediaPlayer.getCurrentPosition());
+                            if (mediaPlayer.isPlaying()) {
+                                handler.postDelayed(progressNotification, 1000);
+                            }
+                        }
+                    } catch (Exception e) {
+                        Log.e("MediaPlayerService", "progressNotifycation", e);
+                    }
+                }
+            };
 
-                                     @Override
-                                     public void onPause() {
-                                         super.onPause();
-                                         Log.e("MediaPlayerService", "onPause");
-                                         if (mediaPlayer != null) {
-                                             mediaPlayer.pause();
-                                         }
-                                         paused = true;
-                                         sendMessage(MSG_PAUSE, null);
-                                         SongInfo song = playListService.getCurrent();
-                                         if (song != null) {
-                                             buildNotification(mediaNotification.actionPlay(getApplicationContext()), song);
-                                         }
-                                     }
+            @Override
+            public void onPlay() {
+                super.onPlay();
+                Log.e("MediaPlayerService", "onPlay ");
+                if (paused) { //resume from paused
+                    try {
+                        mediaPlayer.start();
+                        SongInfo song = playListService.getCurrent();
+                        if (song != null) {
+                            buildNotification(mediaNotification.actionPause(getApplicationContext()), song);
+                        }
 
-                                     @Override
-                                     public void onSkipToNext() {
-                                         super.onSkipToNext();
-                                         Log.e("MediaPlayerService", "onSkipToNext");
-                                         playNext();
+                    } catch (IllegalStateException ignore) {
+                        //
+                    }
+                } else {
+                    playNext();
+                }
+                paused = false;
+            }
 
-                                     }
+            @Override
+            public void onPause() {
+                super.onPause();
+                Log.e("MediaPlayerService", "onPause ");
+                if (mediaPlayer != null) {
+                    mediaPlayer.pause();
+                }
+                paused = true;
+                sendMessage(MSG_PAUSE, null);
+                SongInfo song = playListService.getCurrent();
+                if (song != null) {
+                    buildNotification(mediaNotification.actionPlay(getApplicationContext()), song);
+                }
+            }
 
-                                     @Override
-                                     public void onStop() {
-                                         super.onStop();
-                                         Log.e("MediaPlayerService", "onStop");
-                                         sendMessage(MSG_STOP, null);
+            @Override
+            public void onSkipToNext() {
+                super.onSkipToNext();
+                Log.e("MediaPlayerService", "onSkipToNext ");
+                playNext();
+            }
 
-                                         if (mediaPlayer != null) {
-                                             mediaPlayer.release();
-                                             mediaPlayer = null;
-                                         }
+            @Override
+            public void onStop() {
+                super.onStop();
+                Log.e("MediaPlayerService", "onStop ");
+                sendMessage(MSG_STOP, null);
 
-                                         NotificationManager notificationManager = (NotificationManager) getApplicationContext().getSystemService(Context.NOTIFICATION_SERVICE);
-                                         notificationManager.cancel(1);
-                                         Intent intent = new Intent(getApplicationContext(), MediaPlayerService.class);
-                                         stopService(intent);
-                                     }
+                if (mediaPlayer.isPlaying()) {
+                    mediaPlayer.stop();
+                }
+                mediaPlayer.reset();
 
-                                     private void playNext() {
-                                         if (mediaPlayer == null) {
-                                             mediaPlayer = new MediaPlayer();
-                                             mediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
-                                             mediaPlayer.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
-                                                 @Override
-                                                 public void onCompletion(MediaPlayer mp) {
-                                                     mediaController.getTransportControls().skipToNext();
-                                                 }
-                                             });
-                                         }
+                NotificationManager notificationManager = (NotificationManager) getApplicationContext().getSystemService(Context.NOTIFICATION_SERVICE);
+                notificationManager.cancel(1);
+                Intent intent = new Intent(getApplicationContext(), MediaPlayerService.class);
+                stopService(intent);
+            }
 
-                                         paused = false;
-                                         final SongInfo song = playListService.next();
-                                         try {
-                                             mediaPlayer.reset();
-                                             handler.removeCallbacks(progressNotification);
+            @Override
+            public void onSeekTo(long pos) {
+                super.onSeekTo(pos);
+                if (mediaPlayer != null && mediaPlayer.isPlaying()) {
+                    mediaPlayer.seekTo(Long.valueOf(pos).intValue());
+                }
+            }
 
-                                             if (song.getLocation() == null) {
-                                                 try (AssetFileDescriptor afd = getBaseContext().getResources().openRawResourceFd(R.raw.threesec)) {
-                                                     mediaPlayer.setDataSource(afd.getFileDescriptor(), afd.getStartOffset(), afd.getLength());
-                                                 }
-                                                 waiting = true;
-                                             } else {
-                                                 waiting = false;
-                                                 mediaPlayer.setDataSource(song.getLocation());
+            private void playNext() {
+                paused = false;
+                final SongInfo song = playListService.next();
+                Log.i("song", "get next song " + song.getArtist());
+                try {
+                    mediaPlayer.reset();
+                    handler.removeCallbacks(progressNotification);
 
-                                                 sendMessage(MSG_TRACK_LIST_CHANGES, playListService.getToPlaySimpleFormat());
+                    if (song.getLocation() == null) {
+                        try (AssetFileDescriptor afd = getBaseContext().getResources().openRawResourceFd(R.raw.threesec)) {
+                            mediaPlayer.setDataSource(afd.getFileDescriptor(), afd.getStartOffset(), afd.getLength());
+                        }
+                    } else {
+                        mediaPlayer.setDataSource(song.getLocation());
 
-                                                 handler.postDelayed(progressNotification, 1000);
-                                             }
+                        sendMessage(MSG_TRACK_LIST_CHANGES, playListService.getToPlaySimpleFormat());
 
-                                             mediaPlayer.prepareAsync();
-                                             sendMessage(MSG_SET_CURRENT_SONG, song);
-                                             sendMessage(MSG_PLAY, song);
+                        handler.postDelayed(progressNotification, 1000);
+                    }
 
-                                             mediaPlayer.setOnPreparedListener(new MediaPlayer.OnPreparedListener() {
-                                                 @Override
-                                                 public void onPrepared(MediaPlayer mp) {
-                                                     mediaPlayer.start();
-                                                     sendMessage(MSG_SET_DURATION, mediaPlayer.getDuration());
-                                                     buildNotification(mediaNotification.actionPause(getApplicationContext()), song);
-                                                 }
-                                             });
+                    mediaPlayer.prepareAsync();
+                    sendMessage(MSG_SET_CURRENT_SONG, song);
+                    sendMessage(MSG_PLAY, song);
+
+                    mediaPlayer.setOnPreparedListener(new MediaPlayer.OnPreparedListener() {
+                        @Override
+                        public void onPrepared(MediaPlayer mp) {
+                            Log.e("MediaPlayerService", "-------------on prepared-----------------------------" + song);
+                            mediaPlayer.start();
+                            sendMessage(MSG_SET_DURATION, mediaPlayer.getDuration());
+                            buildNotification(mediaNotification.actionPause(getApplicationContext()), song);
+                        }
+                    });
 
 
-                                         } catch (Exception e) {
-                                             try {
-                                                 mediaPlayer.pause();
-                                             } catch (Exception ignore) {
-                                                 //ignore
-                                             }
-                                             Log.e("MediaPlayerService", "while next", e);
-                                         }
+                } catch (Exception e) {
+                    try {
+                        mediaPlayer.pause();
+                    } catch (Exception ignore) {
+                        Log.e("MediaPlayerService", "while paause", ignore);
+                    }
+                    Log.e("MediaPlayerService", "while next", e);
+                }
 
-                                     }
+            }
 
-                                 });
+        });
     }
 
     @Override
@@ -326,6 +329,13 @@ public class MediaPlayerService extends AbstractLocalBinderService implements Ca
         if (playListServiceBound) {
             unbindService(this);
             playListServiceBound = false;
+        }
+        if (mediaPlayer != null) {
+            if (mediaPlayer.isPlaying()) {
+                mediaPlayer.stop();
+            }
+            mediaPlayer.reset();
+            mediaPlayer.release();
         }
     }
 
@@ -357,6 +367,8 @@ public class MediaPlayerService extends AbstractLocalBinderService implements Ca
         AbstractLocalBinderService.LocalBinder<PlayListService> binder = (AbstractLocalBinderService.LocalBinder<PlayListService>) service;
         playListService = binder.getService();
         playListServiceBound = true;
+
+        Log.e("MediService", "onServiceConnected " + name);
     }
 
     /**
@@ -371,6 +383,7 @@ public class MediaPlayerService extends AbstractLocalBinderService implements Ca
      */
     @Override
     public void onServiceDisconnected(ComponentName name) {
+        Log.e("MediService", "onServiceDisconnected " + name);
         playListServiceBound = false;
     }
 
@@ -389,7 +402,7 @@ public class MediaPlayerService extends AbstractLocalBinderService implements Ca
      */
     protected void sendMessage(int msg, Object data) {
         Intent intent = new Intent(MediaEvent.EVENT);
-        intent.putExtra(MediaEvent.DATA_RADIO, radio);
+        intent.putExtra(MediaEvent.DATA_RADIO, playListService.getCurrentRadio());
         intent.putExtra(MediaEvent.DATA_MESSAGE_CODE, msg);
         if (data instanceof Serializable) {
             intent.putExtra(MediaEvent.DATA_SERIALIZEBLE, (Serializable) data);
@@ -400,14 +413,24 @@ public class MediaPlayerService extends AbstractLocalBinderService implements Ca
         LocalBroadcastManager.getInstance(this).sendBroadcast(intent);
     }
 
+    protected void sendError(String error){
+        Intent intent = new Intent(MediaEvent.EVENT);
+        intent.putExtra(MediaEvent.GLOBAL_ERROR, error);
+
+        LocalBroadcastManager.getInstance(this).sendBroadcast(intent);
+    }
+
     private void buildNotification(final Notification.Action action, final SongInfo songInfo) {
         if (mediaNotification == null || mediaSession == null) {
             return;
         }
         Notification.Builder builder = mediaNotification.buildNotification(getApplicationContext(), action, songInfo, mediaSession.getSessionToken());
         if (builder != null) {
+            Notification notification = builder.build();
             NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-            notificationManager.notify(1, builder.build());
+            notificationManager.notify(1, notification);
+
+            //startForeground(1, notification);
         }
     }
 }

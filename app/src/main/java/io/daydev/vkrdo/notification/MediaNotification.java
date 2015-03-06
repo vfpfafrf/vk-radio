@@ -9,10 +9,12 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.media.session.MediaSession;
 import android.os.AsyncTask;
+import android.support.v4.app.NotificationCompat;
 import android.util.Log;
 import io.daydev.vkrdo.MainActivity;
 import io.daydev.vkrdo.R;
 import io.daydev.vkrdo.bean.SongInfo;
+import io.daydev.vkrdo.service.MediaPlayerEvents;
 import io.daydev.vkrdo.service.MediaPlayerService;
 import io.daydev.vkrdo.util.SimpleDiskCache;
 
@@ -21,7 +23,7 @@ import java.net.URL;
 /**
  * Helper class for media notifications: images, caches etc
  */
-public class MediaNotification {
+public class MediaNotification implements MediaPlayerEvents {
 
     private static final String TAG = "MediaNotification";
 
@@ -31,20 +33,11 @@ public class MediaNotification {
     private Bitmap currentBitmap;
     private SongInfo currentSong;
 
-    final private String intentPlay;
-    final private String intentPause;
-    final private String intentStop;
-    final private String intentNext;
-
     final private Context mediaService;
 
     private MediaNotificationCallback bitmapCallback;
 
-    public MediaNotification(Context mediaService, String intentPlay, String intentPause, String intentStop, String intentNext) {
-        this.intentPlay = intentPlay;
-        this.intentPause = intentPause;
-        this.intentStop = intentStop;
-        this.intentNext = intentNext;
+    public MediaNotification(Context mediaService) {
         this.mediaService = mediaService;
 
         diskCache = new SimpleDiskCache(mediaService, "journal", 1024 * 1024 * 50, Bitmap.CompressFormat.JPEG, 90);
@@ -62,11 +55,15 @@ public class MediaNotification {
     }
 
     public Notification.Action actionPlay(Context applicationContext){
-        return generateAction(applicationContext, android.R.drawable.ic_media_play, "Play", intentPlay);
+        return generateAction(applicationContext, android.R.drawable.ic_media_play, "Play", ACTION_PLAY);
     }
 
     public Notification.Action actionPause(Context applicationContext){
-        return generateAction(applicationContext, android.R.drawable.ic_media_pause, "Pause", intentPause);
+        return generateAction(applicationContext, android.R.drawable.ic_media_pause, "Pause", ACTION_PAUSE);
+    }
+
+    public Notification.Action actionNext(Context applicationContext){
+        return generateAction(applicationContext, android.R.drawable.ic_media_next, "Next", ACTION_NEXT);
     }
 
 
@@ -77,7 +74,7 @@ public class MediaNotification {
 
         Bitmap bitmap;
 
-        if (currentSong != null && currentSong.getArtist().equals(songInfo.getArtist()) && currentSong.getTitle().equals(songInfo.getTitle())) {
+        if (currentSong != null && currentSong.equals(songInfo)) {
             bitmap = currentBitmap;
         } else {
 
@@ -128,31 +125,40 @@ public class MediaNotification {
         bitmapCallback.notifyImage(image);
 
         Notification.MediaStyle style = new Notification.MediaStyle();
+        style.setShowActionsInCompactView(0, 1);
+        style.setMediaSession(mediaSession);
+
+        // delete - eq stop event
         Intent intent = new Intent(applicationContext, MediaPlayerService.class);
-        intent.setAction(intentStop);
+        intent.setAction(ACTION_STOP);
         PendingIntent pendingIntent = PendingIntent.getService(applicationContext, 1, intent, 0);
+
         Notification.Builder builder = new Notification.Builder(mediaService)
                 .setSmallIcon(R.drawable.ic_headphones)
                 .setContentTitle(songInfo.getArtist())
                 .setContentText(songInfo.getTitle())
                 .setDeleteIntent(pendingIntent)
+                .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
                 .setStyle(style);
 
-        if (image != null) {
-            builder.setLargeIcon(image);
+        if (currentBitmap != null) {
+            builder.setLargeIcon(currentBitmap);
             //builder.setColor(BitmapUtil.getDominantColor(image));
         }
-        builder.addAction(action);
-        builder.addAction(generateAction(applicationContext, android.R.drawable.ic_media_next, "Next", intentNext));
-        style.setShowActionsInCompactView(0, 1);
-        style.setMediaSession(mediaSession);
 
+        // add actions -  play/pause and Next
+        builder.addAction(action);
+        builder.addAction(actionNext(applicationContext));
+
+        // add to back stack
         Intent resultIntent = new Intent(mediaService, MainActivity.class);
         TaskStackBuilder stackBuilder = TaskStackBuilder.create(mediaService);
         stackBuilder.addParentStack(MainActivity.class);
         stackBuilder.addNextIntent(resultIntent);
         PendingIntent resultPendingIntent = stackBuilder.getPendingIntent(0, PendingIntent.FLAG_UPDATE_CURRENT);
+
         builder.setContentIntent(resultPendingIntent);
+
         return builder;
     }
 

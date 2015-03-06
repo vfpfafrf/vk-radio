@@ -42,6 +42,7 @@ public class RadioFragment extends Fragment implements Callback<Message>, Callba
     private SeekBar seekBar;
     private ImageView albumCover;
     private Button buttonPlayStop;
+    private Button buttonNext;
 
     private enum State {
         PLAY, PAUSE
@@ -78,7 +79,7 @@ public class RadioFragment extends Fragment implements Callback<Message>, Callba
 
         currentState = State.PAUSE;
 
-        Button buttonNext = (Button) rootView.findViewById(R.id.ButtonNext);
+        buttonNext = (Button) rootView.findViewById(R.id.ButtonNext);
         buttonNext.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -91,7 +92,7 @@ public class RadioFragment extends Fragment implements Callback<Message>, Callba
             @Override
             public void onClick(View v) {
                 if (State.PAUSE.equals(currentState)) {
-                    sendToMediaService(MediaPlayerService.ACTION_GENRE, MediaPlayerService.EXTRA_RADIO, radioInfo);
+                    Log.e("RF", "Sending play with "+radioInfo);
                     sendToMediaService(MediaPlayerService.ACTION_PLAY);
                 } else {
                     sendToMediaService(MediaPlayerService.ACTION_PAUSE);
@@ -131,7 +132,6 @@ public class RadioFragment extends Fragment implements Callback<Message>, Callba
             if (param != null && !param.isEmpty()){
                 if (EXTRA_PLAY.equalsIgnoreCase(param)){
                     //start playing!
-                    sendToMediaService(MediaPlayerService.ACTION_GENRE, MediaPlayerService.EXTRA_RADIO, radioInfo);
                     sendToMediaService(MediaPlayerService.ACTION_PLAY);
                 }
             }
@@ -184,6 +184,7 @@ public class RadioFragment extends Fragment implements Callback<Message>, Callba
                     buttonPlayStop.setText(play);
                     break;
                 case MediaPlayerService.MSG_PLAY:
+                    buttonNext.setEnabled(true); //eq in any way - this radio started play - so we can use next
                     currentState = State.PLAY;
                     buttonPlayStop.setText(pause);
                     break;
@@ -206,6 +207,12 @@ public class RadioFragment extends Fragment implements Callback<Message>, Callba
         } catch (Exception e){ // eq fragment not connected to activity race for resources
             Log.e("RadioFragment", "on message handle", e);
         }
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        //sendToMediaService(MediaPlayerService.ACTION_STOP);
     }
 
     /**

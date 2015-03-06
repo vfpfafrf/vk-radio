@@ -58,7 +58,7 @@ public class PlayListService extends AbstractLocalBinderService implements PlayL
      */
     @Override
     public boolean generate(RadioInfo radioInfo) {
-        if (currentRadio != null && currentRadio.isSame(radioInfo)){
+        if (radioInfo != null && currentRadio != null && currentRadio.isSame(radioInfo)){
             return false;
         } else {
             toPlay.clear();
@@ -172,6 +172,10 @@ public class PlayListService extends AbstractLocalBinderService implements PlayL
     @Override
     public SongInfo getCurrent() {
         return currentSong == null ? WAIT : currentSong;
+    }
+
+    public RadioInfo getCurrentRadio(){
+        return currentRadio;
     }
 
     /**

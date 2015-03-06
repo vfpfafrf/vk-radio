@@ -9,5 +9,15 @@
             android:layout_height="wrap_content"
             android:textAppearance="@android:style/TextAppearance.DeviceDefault.Large"
             android:text="@string/problems_header"
-            android:id="@+id/textView3" android:layout_gravity="center_horizontal"/>
+            android:id="@+id/textView3" android:layout_gravity="center_horizontal" android:layout_marginTop="20dp"/>
+    <ImageView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@+id/imageView" android:layout_gravity="center_horizontal" android:src="@drawable/error"
+            android:layout_marginTop="30dp"/>
+    <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="error description"
+            android:id="@+id/errorText" android:layout_gravity="center_horizontal" android:layout_marginTop="50dp"/>
 </LinearLayout>

@@ -4,7 +4,6 @@ import android.app.Fragment;
 import android.content.Intent;
 import android.os.Bundle;
 import android.support.v4.content.LocalBroadcastManager;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -37,8 +36,6 @@ public class HomeFragment extends Fragment {
                 Intent intent = new Intent(MediaEvent.EVENT);
                 intent.putExtra(MediaEvent.SIMPLE_RADIO, artist);
                 LocalBroadcastManager.getInstance(HomeFragment.this.getActivity()).sendBroadcast(intent);
-
-                Log.e("omfg", "send to home");
             }
         });
 

@@ -2,10 +2,11 @@ package io.daydev.vkrdo.external;
 
 import android.os.AsyncTask;
 import android.util.Log;
-import io.daydev.vkrdo.bean.Configuration;
-import io.daydev.vkrdo.util.Callback;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import io.daydev.vkrdo.bean.Configuration;
+import io.daydev.vkrdo.util.Callback;
+import io.daydev.vkrdo.util.ResultTuple;
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
 import org.apache.http.StatusLine;
@@ -27,17 +28,17 @@ public class ConfigurationHolder {
         return instance;
     }
 
-    public void load(String configUrl, final Callback<Configuration> configurationCallback){
+    public void load(String configUrl, final Callback<ResultTuple<Configuration>> configurationCallback){
 
         if (instance != null && configurationCallback!= null){
-            configurationCallback.callback(instance);
+            configurationCallback.callback(ResultTuple.success(instance));
             return;
         }
 
         try {
-            AsyncTask<String, String, Configuration> configLoader = new AsyncTask<String, String, Configuration>() {
+            AsyncTask<String, String, ResultTuple<Configuration>> configLoader = new AsyncTask<String, String, ResultTuple<Configuration>>() {
                 @Override
-                protected Configuration doInBackground(String... params) {
+                protected ResultTuple<Configuration> doInBackground(String... params) {
                     HttpClient httpclient = new DefaultHttpClient();
                     HttpResponse response;
                     try {
@@ -49,7 +50,7 @@ public class ConfigurationHolder {
                                 String responseString = out.toString();
 
                                 Gson gson = new GsonBuilder().create();
-                                return gson.fromJson(responseString, Configuration.class);
+                                return ResultTuple.success(gson.fromJson(responseString, Configuration.class));
                             }
                         } else{
                             response.getEntity().getContent().close();
@@ -57,15 +58,15 @@ public class ConfigurationHolder {
                         }
                     } catch (Exception e) {
                         Log.e("ConfigurationTask", "while loading", e);
+                        return ResultTuple.error(e.getMessage());
                     }
-                    return null;
                 }
 
                 @Override
-                protected void onPostExecute(Configuration configuration) {
+                protected void onPostExecute(ResultTuple<Configuration> result) {
                     if (configurationCallback != null) {
-                        instance = configuration;
-                        configurationCallback.callback(configuration);
+                        instance = result.getResult();
+                        configurationCallback.callback(result);
                     }
                 }
             };
@@ -73,7 +74,7 @@ public class ConfigurationHolder {
         } catch (Exception e){
             Log.e("ConfigurationTask", "while loading", e);
             if (configurationCallback != null) {
-                configurationCallback.callback(null);
+                configurationCallback.callback(ResultTuple.<Configuration>error(e.getMessage()));
             }
         }
     }

@@ -1,9 +1,6 @@
 package io.daydev.vkrdo;
 
-import android.app.Activity;
-import android.app.AlertDialog;
-import android.app.Fragment;
-import android.app.FragmentManager;
+import android.app.*;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -32,6 +29,7 @@ import io.daydev.vkrdo.slide.NavDrawerItem;
 import io.daydev.vkrdo.slide.NavDrawerListAdapter;
 import io.daydev.vkrdo.util.Callback;
 import io.daydev.vkrdo.util.CallbackChecker;
+import io.daydev.vkrdo.util.ResultTuple;
 import io.daydev.vkrdo.util.Tuple;
 import com.vk.sdk.*;
 import com.vk.sdk.api.VKError;
@@ -92,13 +90,13 @@ public class MainActivity extends Activity {
 
         if (configuration == null){
             ConfigurationHolder task = new ConfigurationHolder();
-            task.load(CONFIG, new Callback<io.daydev.vkrdo.bean.Configuration>() {
+            task.load(CONFIG, new Callback<ResultTuple<io.daydev.vkrdo.bean.Configuration>>(){
                 @Override
-                public void callback(io.daydev.vkrdo.bean.Configuration obj) {
-                    if (obj != null){
-                        configuration = obj;
+                public void callback(ResultTuple<io.daydev.vkrdo.bean.Configuration> result) {
+                    if (result != null && result.hasResult()){
+                        configuration = result.getResult();
                     }  else {
-                        displayError();
+                        displayError(result == null ? "" : result.getError());
                     }
                 }
             });
@@ -279,7 +277,6 @@ public class MainActivity extends Activity {
                     fragment = new RadioFragment();
                     currentFragmentCallback = (Callback<Message>) fragment;
                     currentFragmentRadioChecker = (CallbackChecker<RadioInfo>) fragment;
-
                     title = navMenuTitles.get(position - 1);
 
                     currentRadio = radios.get(title);
@@ -297,12 +294,19 @@ public class MainActivity extends Activity {
         if (fragment != null) {
             try {
                 FragmentManager fragmentManager = getFragmentManager();
-                fragmentManager
+                FragmentTransaction transaction =fragmentManager
                         .beginTransaction()
                         .replace(R.id.frame_container, fragment)
-                        .addToBackStack(null)
-                        .commit();
+                        .addToBackStack(null);
+
+                //stupid fix for this http://stackoverflow.com/questions/7575921/illegalstateexception-can-not-perform-this-action-after-onsaveinstancestate-h
+                if (fragment instanceof RadioFragment){
+                    transaction.commit();
+                } else {
+                    transaction.commitAllowingStateLoss();
+                }
             }catch (Exception e){
+                Log.e("omfg", "displayView", e);
                 return;
             }
         }
@@ -483,6 +487,13 @@ public class MainActivity extends Activity {
     private BroadcastReceiver mMessageReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
+            // display error
+            String globalError = intent.getStringExtra(MediaEvent.GLOBAL_ERROR);
+            if (globalError != null && !globalError.isEmpty()){
+                displayError(globalError);
+                return;
+            }
+
             // remove radio and go to home
             String radioRemove = intent.getStringExtra(MediaEvent.RADIO_REMOVE);
             if (radioRemove != null && !radioRemove.isEmpty()){
@@ -513,7 +524,6 @@ public class MainActivity extends Activity {
             if (radio != null && !radio.isEmpty()){
                 // if "magic" - display home screen
                 if (radio.equals(MediaEvent.MAGIC_HOME)){
-                    Log.e("omfg", "recv to home "+currentState);
                     if (!State.RADIO.equals(currentState)) {
                         if (configuration != null) {
                             displayView(-1);
@@ -616,8 +626,12 @@ public class MainActivity extends Activity {
         }
     }
 
-    private void displayError(){
+    private void displayError(String description){
         ErrorFragment fragment = new ErrorFragment();
+        Bundle bundle = new Bundle();
+        bundle.putSerializable(ErrorFragment.ERROR_DESCRIPTION, description);
+        fragment.setArguments(bundle);
+
         FragmentManager fragmentManager = getFragmentManager();
         fragmentManager
                 .beginTransaction()

@@ -30,6 +30,8 @@ public interface PlayList {
      */
     public SongInfo getCurrent();
 
+    public RadioInfo getCurrentRadio();
+
     /**
      * return "to-play-list" in simple string format
      * @return Collection
