@@ -5,11 +5,14 @@ import android.util.Log;
 import io.daydev.vkrdo.bean.PlayList;
 import io.daydev.vkrdo.bean.RadioInfo;
 import io.daydev.vkrdo.bean.SongInfo;
-import io.daydev.vkrdo.external.echo.EchoService;
+import io.daydev.vkrdo.external.PlaylistSuplier;
+import io.daydev.vkrdo.external.SongSuplier;
+import io.daydev.vkrdo.external.echo.StaticEchoService;
 import io.daydev.vkrdo.external.lastfm.LastFmService;
-import io.daydev.vkrdo.external.vk.SongSuplier;
+import io.daydev.vkrdo.external.vk.VkSongSuplier;
 import io.daydev.vkrdo.util.Callback;
 import io.daydev.vkrdo.util.CallbackChecker;
+import io.daydev.vkrdo.util.ResultTuple;
 import io.daydev.vkrdo.util.Tuple;
 
 import java.util.ArrayList;
@@ -27,13 +30,13 @@ public class PlayListService extends AbstractLocalBinderService implements PlayL
     public static final SongInfo FAIL = new SongInfo("error while generate playlist...","", null, null);
 
     private static final int PLAY_LIST_CAPATIBILITY = 3;
-    private static final int RESOLVE_LIST_CAPATIBILITY = 3;
+    private static final int RESOLVE_LIST_CAPATIBILITY = 5;
 
     private Queue<SongInfo> toPlay = new ConcurrentLinkedQueue<>();
     private Queue<SongInfo> toResolve = new ConcurrentLinkedQueue<>();
 
-    private EchoService echoService = new EchoService();
-    private SongSuplier vkService = new SongSuplier();
+    private PlaylistSuplier echoService = new StaticEchoService();
+    private SongSuplier vkService = new VkSongSuplier();
     private LastFmService lastFmService = new LastFmService();
 
     private Callback<SongInfo> callback;
@@ -72,7 +75,7 @@ public class PlayListService extends AbstractLocalBinderService implements PlayL
             @Override
             public void callback(RadioInfo obj) {
                 if (obj != null) {
-                    addToResolve(1);
+                    addToResolve(2);
                 } else {
                     currentRadio = null;
                 }
@@ -101,11 +104,6 @@ public class PlayListService extends AbstractLocalBinderService implements PlayL
                                 }
                             }
                         }
-                    } else {
-                        /*toPlay.add(FAIL);
-                        if (callback != null){
-                            callback.callback(FAIL);
-                        }*/
                     }
                 }
             });
@@ -118,15 +116,17 @@ public class PlayListService extends AbstractLocalBinderService implements PlayL
             if (radio != null) {
                 final SongInfo songInfo = toResolve.poll();
                 if (songInfo != null) {
-                    vkService.getSongUriAsync(songInfo, new Callback<String>() {
+                    vkService.getSongUriAsync(songInfo, new Callback<ResultTuple<String>>(){
                         @Override
-                        public void callback(String obj) {
-                            if (obj != null && radio.isSame(currentRadio)) {
-                                songInfo.setLocation(obj);
-                                toPlay.add(songInfo);
-                                Log.i("PlayListService", "resolved " + songInfo);
-                                if (callback != null) {
-                                    callback.callback(songInfo);
+                        public void callback(ResultTuple<String> result) {
+                            if (result != null){
+                                if (result.hasResult() && radio.isSame(currentRadio)){
+                                    songInfo.setLocation(result.getResult());
+                                    toPlay.add(songInfo);
+                                    Log.i("PlayListService", "resolved " + songInfo);
+                                    if (callback != null) {
+                                        callback.callback(songInfo);
+                                    }
                                 }
                             }
                         }

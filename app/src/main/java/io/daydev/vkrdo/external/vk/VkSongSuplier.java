@@ -2,17 +2,25 @@ package io.daydev.vkrdo.external.vk;
 
 import android.util.Log;
 import io.daydev.vkrdo.bean.SongInfo;
+import io.daydev.vkrdo.external.SongSuplier;
 import io.daydev.vkrdo.util.Callback;
 import com.vk.sdk.api.*;
+import io.daydev.vkrdo.util.ResultTuple;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.util.ArrayList;
 import java.util.Collection;
 
-public class SongSuplier {
+public class VkSongSuplier implements SongSuplier{
 
-    public void getSongUriAsync(final SongInfo song, final Callback<String> callback) {
+    /**
+     * returns to callback URL of resolved song or error
+     * @param song song to resolve
+     * @param callback callback function
+     */
+    @Override
+    public void getSongUriAsync(final SongInfo song, final Callback<ResultTuple<String>> callback) {
         String title = song.getTitle();
         if (title.contains(" (Radio Edit)")){
             title = title.replace(" (Radio Edit)", "");
@@ -40,20 +48,22 @@ public class SongSuplier {
                             }
                         }
                     }
-                } catch (Exception e) {
-                    Log.e("omfg", "", e);
-                }
 
-                if (!ret.isEmpty()) {
-                    callback.callback(ret.iterator().next());
-                } else {
-                    callback.callback(null);
+                    if (!ret.isEmpty()) {
+                        callback.callback(ResultTuple.success(ret.iterator().next()));
+                    } else {
+                        callback.callback(null);
+                    }
+                } catch (Exception e) {
+                    Log.e("SongSuplier", "while getting song", e);
+                    callback.callback(ResultTuple.<String>error(e.getMessage()));
                 }
             }
 
             @Override
             public void onError(VKError error) {
                 super.onError(error);
+                callback.callback(ResultTuple.<String>error(error.errorMessage));
             }
         });
     }

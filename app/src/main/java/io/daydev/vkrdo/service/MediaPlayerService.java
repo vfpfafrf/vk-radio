@@ -45,6 +45,8 @@ public class MediaPlayerService extends AbstractLocalBinderService implements Me
     private PlayListService playListService;
     private boolean playListServiceBound = false;
 
+    private boolean startedNewRadio = false;
+
     public static final int MSG_TRACK_LIST_CHANGES = 3;
     public static final int MSG_SET_DURATION = 4;
     public static final int MSG_SET_CURRENT_SONG = 5;
@@ -79,6 +81,7 @@ public class MediaPlayerService extends AbstractLocalBinderService implements Me
                 RadioInfo radio = (RadioInfo) intent.getSerializableExtra(EXTRA_RADIO);
                 if (radio != null) {
                     if (playListService.generate(radio)) {
+                        startedNewRadio = true;
                         playListService.setCallback(this);
                         playListService.setCallbackChecker(this);
                     }
@@ -210,7 +213,7 @@ public class MediaPlayerService extends AbstractLocalBinderService implements Me
             public void onPlay() {
                 super.onPlay();
                 Log.e("MediaPlayerService", "onPlay ");
-                if (paused) { //resume from paused
+                if (paused && !startedNewRadio) { //resume from paused and new radio loading
                     try {
                         mediaPlayer.start();
                         SongInfo song = playListService.getCurrent();
@@ -288,9 +291,7 @@ public class MediaPlayerService extends AbstractLocalBinderService implements Me
                         }
                     } else {
                         mediaPlayer.setDataSource(song.getLocation());
-
                         sendMessage(MSG_TRACK_LIST_CHANGES, playListService.getToPlaySimpleFormat());
-
                         handler.postDelayed(progressNotification, 1000);
                     }
 
@@ -303,6 +304,7 @@ public class MediaPlayerService extends AbstractLocalBinderService implements Me
                         public void onPrepared(MediaPlayer mp) {
                             Log.e("MediaPlayerService", "-------------on prepared-----------------------------" + song);
                             mediaPlayer.start();
+                            startedNewRadio = false;
                             sendMessage(MSG_SET_DURATION, mediaPlayer.getDuration());
                             buildNotification(mediaNotification.actionPause(getApplicationContext()), song);
                         }
