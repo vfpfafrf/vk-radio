@@ -61,7 +61,7 @@ public class StaticEchoService extends AbstractEchoService {
                                     generating = true;
                                     Playlist playlist = echoNest.createStaticPlaylist(params[0]);
                                     for (Song song : playlist.getSongs()) {
-                                        if (radioTitle.equals(title)) {
+                                        if (radioTitle != null && radioTitle.equals(title)) {
                                             Log.i(TAG, "add " + song.getArtistName() + " " + song.getTitle());
                                             SongInfo info = new SongInfo(song.getArtistName(), song.getTitle(), null, null);
                                             info.setCoverArt(song.getCoverArt());
@@ -72,7 +72,7 @@ public class StaticEchoService extends AbstractEchoService {
                                             break;
                                         }
                                     }
-                                    if (radioTitle.equals(title) && songQueue.size() < 10) {
+                                    if (radioTitle != null && radioTitle.equals(title) && songQueue.size() < 10) {
                                         useVk = true;
                                     }
                                 }

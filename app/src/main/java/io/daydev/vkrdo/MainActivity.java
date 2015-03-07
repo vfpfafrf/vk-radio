@@ -54,6 +54,11 @@ public class MainActivity extends VKActivity implements MediaEvent {
     private ListView mDrawerList;
     private ActionBarDrawerToggle mDrawerToggle;
 
+    private DrawerLayout rightDrawerLayout;
+    private ListView rightDrawerList;
+    private ActionBarDrawerToggle rightDrawerToggle;
+
+
     // nav drawer title
     private CharSequence mDrawerTitle;
 
@@ -68,6 +73,7 @@ public class MainActivity extends VKActivity implements MediaEvent {
     private RadioInfo currentRadio;
 
     private NavDrawerListAdapter slideAdapter;
+    private NavDrawerListAdapter rightAdapter;
 
 
     private enum State {
@@ -122,8 +128,11 @@ public class MainActivity extends VKActivity implements MediaEvent {
         mDrawerLayout = (DrawerLayout) findViewById(R.id.drawer_layout);
         mDrawerList = (ListView) findViewById(R.id.list_slidermenu);
 
+        rightDrawerLayout = (DrawerLayout) findViewById(R.id.drawer_layout);
+        rightDrawerList = (ListView) findViewById(R.id.right_drawer);
 
         mDrawerList.setOnItemClickListener(new SlideMenuClickListener());
+        rightDrawerList.setOnItemClickListener(new RihtMenuClickListener());
 
         List<NavDrawerItem> navDrawerItems = new ArrayList<>();
         navDrawerItems.add(new NavDrawerItem(getString(R.string.add_radio_slide), android.R.drawable.ic_input_add));
@@ -133,6 +142,9 @@ public class MainActivity extends VKActivity implements MediaEvent {
         // setting the nav drawer list adapter
         slideAdapter = new NavDrawerListAdapter(getApplicationContext(), navDrawerItems);
         mDrawerList.setAdapter(slideAdapter);
+
+        rightAdapter = new NavDrawerListAdapter(getApplicationContext(), new ArrayList<NavDrawerItem>());
+        rightDrawerList.setAdapter(rightAdapter);
 
         // enabling action bar app icon and behaving it as toggle button
         if (getActionBar() != null) {
@@ -161,6 +173,27 @@ public class MainActivity extends VKActivity implements MediaEvent {
         };
         mDrawerLayout.setDrawerListener(mDrawerToggle);
 
+        rightDrawerToggle = new ActionBarDrawerToggle(this, rightDrawerLayout,
+                R.drawable.ic_drawer, //nav menu toggle icon
+                R.string.app_name, // nav drawer open - description for accessibility
+                R.string.app_name // nav drawer close - description for accessibility
+        ) {
+            public void onDrawerClosed(View view) {
+                getActionBar().setTitle(mTitle);
+                preventBack = false;
+                // calling onPrepareOptionsMenu() to show action bar icons
+                invalidateOptionsMenu();
+            }
+
+            public void onDrawerOpened(View drawerView) {
+                getActionBar().setTitle(mDrawerTitle);
+                preventBack = true;
+                // calling onPrepareOptionsMenu() to hide action bar icons
+                invalidateOptionsMenu();
+            }
+        };
+        rightDrawerLayout.setDrawerListener(rightDrawerToggle);
+
         if (savedInstanceState == null) {
             // on first time display view for first nav item
             SplashFragment fragment = new SplashFragment();
@@ -183,6 +216,29 @@ public class MainActivity extends VKActivity implements MediaEvent {
             slideAdapter.setIcon(currentRadio, android.R.drawable.ic_media_pause);
             // display view for selected nav drawer item
             displayView(position);
+        }
+    }
+
+    private class RihtMenuClickListener implements ListView.OnItemClickListener {
+
+        @Override
+        public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+            if (position != 1){ //if not text "similar artist" - start radio & play!
+                String radio = rightAdapter.getItem(position).getTitle();
+
+                RadioInfo radioInfo = RadioBuilder.getInstance()
+                        .setTitle(radio)
+                        .setArtist(radio)
+                        .setArtistLinkType(RadioInfo.ArtistLinkType.LIMIT)
+                        .build();
+
+                Intent intent = new Intent(MediaEvent.EVENT);
+                intent.putExtra(MediaEvent.TYPE, MediaEvent.SIMPLE_RADIO);
+                intent.putExtra(MediaEvent.SIMPLE_RADIO, RADIO_TITLE);
+                intent.putExtra(MediaEvent.REAL_RADIO, radioInfo);
+
+                LocalBroadcastManager.getInstance(MainActivity.this).sendBroadcast(intent);
+            }
         }
     }
 
@@ -320,6 +376,7 @@ public class MainActivity extends VKActivity implements MediaEvent {
 
         setTitle(title);
         mDrawerLayout.closeDrawer(mDrawerList);
+        rightDrawerLayout.closeDrawer(rightDrawerList);
     }
 
     private void radioSettings(RadioInfo radioInfo) {
@@ -454,7 +511,13 @@ public class MainActivity extends VKActivity implements MediaEvent {
                             } else {
                                 if (!radioInfo.getTitle().equals(FavoriteFragment.RADIO_TITLE)) {
                                     // display current radio & play it
-                                    position = slidePreferencesHelper.position(radioInfo) + POSITION_ACCURATE;
+                                    position =  slidePreferencesHelper.position(radioInfo);
+                                    if (position == -1) {
+                                        slidePreferencesHelper.addWithoutPreferences(radioInfo, slideAdapter);
+                                        position = slidePreferencesHelper.position(radioInfo) + POSITION_ACCURATE;
+                                    } else {
+                                        position += POSITION_ACCURATE;
+                                    }
                                 } else {
                                     // display "favorites" radio and play it
                                     if (slidePreferencesHelper.addWithoutPreferences(radioInfo, slideAdapter)) {
@@ -526,6 +589,16 @@ public class MainActivity extends VKActivity implements MediaEvent {
                                     favmsg.what = MediaPlayerService.MSG_NOT_FAV;
                                 }
                                 currentFragmentCallback.callback(favmsg);
+
+                                rightAdapter.removeAll(false);
+                                rightAdapter.add(NavDrawerItem.generate(currentSong), false);
+                                rightAdapter.add(NavDrawerItem.generate("Similar artists:"), false);
+                                if (currentSong.getSimilarArtists() != null) {
+                                    for (String similar : currentSong.getSimilarArtists()) {
+                                        rightAdapter.add(NavDrawerItem.generate(similar), false);
+                                    }
+                                }
+                                rightAdapter.notifyDataSetChanged();
                             }
                         }
                     }
@@ -555,6 +628,7 @@ public class MainActivity extends VKActivity implements MediaEvent {
                 currentState = State.HOME;
                 setTitle(R.string.app_name);
                 mDrawerList.clearChoices();
+                rightDrawerList.clearChoices();
             } else if(f instanceof FavoriteFragment){
                 currentState = State.FAV;
                 setTitle("Favorites");

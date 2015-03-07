@@ -23,9 +23,15 @@ public class NavDrawerListAdapter extends BaseAdapter {
         this.navDrawerItems = navDrawerItems;
     }
 
-    public void add(NavDrawerItem item){
+    public void add(NavDrawerItem item) {
+            add(item, true);
+    }
+
+    public void add(NavDrawerItem item, boolean notify){
         navDrawerItems.add(item);
-        notifyDataSetChanged();
+        if (notify) {
+            notifyDataSetChanged();
+        }
     }
 
     public boolean replace(String oldTitle, NavDrawerItem newItem){
@@ -100,7 +106,7 @@ public class NavDrawerListAdapter extends BaseAdapter {
     }
 
     @Override
-    public Object getItem(int position) {
+    public NavDrawerItem getItem(int position) {
         return navDrawerItems.get(position);
     }
 
@@ -112,8 +118,7 @@ public class NavDrawerListAdapter extends BaseAdapter {
     @Override
     public View getView(int position, View convertView, ViewGroup parent) {
         if (convertView == null) {
-            LayoutInflater mInflater = (LayoutInflater)
-                    context.getSystemService(Activity.LAYOUT_INFLATER_SERVICE);
+            LayoutInflater mInflater = (LayoutInflater)context.getSystemService(Activity.LAYOUT_INFLATER_SERVICE);
             convertView = mInflater.inflate(R.layout.drawer_list_item, null);
         }
 
@@ -123,8 +128,14 @@ public class NavDrawerListAdapter extends BaseAdapter {
 
         if (navDrawerItems.get(position).getIcon() > 0) {
             imgIcon.setImageResource(navDrawerItems.get(position).getIcon());
+            imgIcon.setVisibility(View.VISIBLE);
         } else {
-            imgIcon.setImageResource(android.R.drawable.ic_media_pause);
+            //imgIcon.setImageResource(android.R.drawable.ic_media_pause);
+            imgIcon.setVisibility(View.GONE);
+
+            ViewGroup.MarginLayoutParams params = (ViewGroup.MarginLayoutParams) txtTitle.getLayoutParams();
+            params.setMargins(30,0,0,0);
+            txtTitle.setLayoutParams(params);
         }
         txtTitle.setText(navDrawerItems.get(position).getTitle());
 
@@ -132,6 +143,7 @@ public class NavDrawerListAdapter extends BaseAdapter {
         // check whether it set visible or not
         if(navDrawerItems.get(position).getCounterVisibility()){
             txtCount.setText(navDrawerItems.get(position).getCount());
+            txtCount.setVisibility(View.VISIBLE);
         }else{
             // hide the counter view
             txtCount.setVisibility(View.GONE);
@@ -140,4 +152,14 @@ public class NavDrawerListAdapter extends BaseAdapter {
         return convertView;
     }
 
+    public void removeAll() {
+        removeAll(true);
+    }
+
+    public void removeAll(boolean notify) {
+        navDrawerItems.clear();
+        if (notify) {
+            notifyDataSetChanged();
+        }
+    }
 }

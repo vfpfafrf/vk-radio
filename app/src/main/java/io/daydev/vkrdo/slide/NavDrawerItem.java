@@ -1,6 +1,7 @@
 package io.daydev.vkrdo.slide;
 
 import io.daydev.vkrdo.bean.RadioInfo;
+import io.daydev.vkrdo.bean.SongInfo;
 
 /**
  * Created by dmitry on 03.03.15.
@@ -13,6 +14,14 @@ public class NavDrawerItem {
 
     public static NavDrawerItem generateVirtual(RadioInfo radioInfo){
         return new NavDrawerItem(radioInfo.getTitle(), android.R.drawable.ic_media_pause, true, "V");
+    }
+
+    public static NavDrawerItem generate(SongInfo songInfo){
+        return new NavDrawerItem(songInfo.getArtist(), 0);
+    }
+
+    public static NavDrawerItem generate(String title){
+        return new NavDrawerItem(title, 0);
     }
 
     private String title;

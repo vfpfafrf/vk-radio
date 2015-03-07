@@ -35,7 +35,7 @@ public class SlidePreferencesHelper {
         Collection<NavDrawerItem> navDrawerItems = new ArrayList<>();
 
         for (String nav : navMenuTitles) {
-            navDrawerItems.add(new NavDrawerItem(nav, -1));
+            navDrawerItems.add(new NavDrawerItem(nav, android.R.drawable.ic_media_pause));
         }
         return navDrawerItems;
     }

@@ -140,12 +140,22 @@ public class PlayListService extends AbstractLocalBinderService implements PlayL
                         }
                     }
                     if (callbackChecker != null && !callbackChecker.check(songInfo)) {
-                        lastFmService.getArtistPhoto(songInfo, new Callback<Tuple<String, String>>() {
+                        lastFmService.getArtistPhoto(songInfo, new Callback<LastFmService.LastFmInfo>() {
                             @Override
-                            public void callback(Tuple<String, String> obj) {
+                            public void callback(LastFmService.LastFmInfo info) {
+                                if (info != null && radio.isSame(currentRadio)) {
+                                    songInfo.setArtistPhoto(info.getPhotoUrl());
+                                    songInfo.setAlbum(info.getAlbumTitle());
+                                    songInfo.setSimilarArtists(info.getSimilar());
+                                }
+                            }
+                        });
+                    } else if (songInfo.getSimilarArtists() == null) {
+                        lastFmService.getSimilarArtists(songInfo, new Callback<Collection<String>>() {
+                            @Override
+                            public void callback(Collection<String> obj) {
                                 if (obj != null && radio.isSame(currentRadio)) {
-                                    songInfo.setArtistPhoto(obj.getFirst());
-                                    songInfo.setAlbum(obj.getSecond());
+                                    songInfo.setSimilarArtists(obj);
                                 }
                             }
                         });

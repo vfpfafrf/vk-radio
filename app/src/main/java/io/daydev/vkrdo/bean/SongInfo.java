@@ -1,6 +1,7 @@
 package io.daydev.vkrdo.bean;
 
 import java.io.Serializable;
+import java.util.Collection;
 
 /**
  * Created by dmitry on 22.02.15.
@@ -13,6 +14,7 @@ public class SongInfo implements Serializable {
     private final String title;
     private volatile String location;
     private String coverArt;
+    private Collection<String> similarArtists;
 
     public SongInfo(String artist, String title, String location, String artistPhoto) {
         this.artist = artist;
@@ -59,6 +61,14 @@ public class SongInfo implements Serializable {
 
     public void setAlbum(String album) {
         this.album = album;
+    }
+
+    public Collection<String> getSimilarArtists() {
+        return similarArtists;
+    }
+
+    public void setSimilarArtists(Collection<String> similarArtists) {
+        this.similarArtists = similarArtists;
     }
 
     @Override
