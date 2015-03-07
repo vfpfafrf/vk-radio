@@ -28,4 +28,5 @@
     <string name="pref_years">Years</string>
     <string name="pref_yt">Year to</string>
     <string name="delete_pref_btn">Delete</string>
+    <string name="hint_vk">vk.com</string>
 </resources>

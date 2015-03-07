@@ -6,34 +6,34 @@
         xmlns:android="http://schemas.android.com/apk/res/android"
         >
 
-<!--    <TextView
-            android:background="#00000000"
-            android:layout_width="fill_parent"
-            android:layout_height="wrap_content"
-            android:textAppearance="?android:attr/textAppearanceLarge"
-            android:text="@string/default_title"
-            android:id="@+id/currentSong" android:layout_marginTop="5dp" android:layout_marginBottom="10dp"
-            />
+    <!--    <TextView
+                android:background="#00000000"
+                android:layout_width="fill_parent"
+                android:layout_height="wrap_content"
+                android:textAppearance="?android:attr/textAppearanceLarge"
+                android:text="@string/default_title"
+                android:id="@+id/currentSong" android:layout_marginTop="5dp" android:layout_marginBottom="10dp"
+                />
 
-                              android:layout_below="@id/currentSong"
--->
+                                  android:layout_below="@id/currentSong"
+    -->
 
     <FrameLayout
-                  android:layout_width="fill_parent"
-                  android:layout_height="fill_parent"
-                  android:orientation="vertical"
-                  android:gravity="center"
-                  android:layout_above="@+id/nextSong">
+            android:layout_width="fill_parent"
+            android:layout_height="fill_parent"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:layout_above="@+id/nextSong">
 
 
         <ImageView
-                    android:layout_width="fill_parent"
-                    android:layout_height="fill_parent"
-                    android:id="@+id/albumArt"
-                    android:contentDescription="@string/image_hint"
-                    android:src="@drawable/ic_headphones"
-                    android:scaleType="centerCrop"
-                    />
+                android:layout_width="fill_parent"
+                android:layout_height="fill_parent"
+                android:id="@+id/albumArt"
+                android:contentDescription="@string/image_hint"
+                android:src="@drawable/ic_headphones"
+                android:scaleType="centerCrop"
+                />
 
 
         <View android:layout_width="fill_parent"
@@ -41,32 +41,53 @@
               android:background="@drawable/gradient_shape"/>
 
 
-        <TextView
-                android:background="#70000000"
+        <LinearLayout
+                android:orientation="vertical"
                 android:layout_width="fill_parent"
-                android:layout_height="wrap_content"
-                android:textAppearance="?android:attr/textAppearanceLarge"
-                android:text="@string/default_title"
-                android:id="@+id/currentSong"
-                />
+                android:layout_height="fill_parent" android:layout_gravity="center_horizontal|top">
+            <TextView
+                    android:background="#70000000"
+                    android:layout_width="fill_parent"
+                    android:layout_height="wrap_content"
+                    android:textAppearance="?android:attr/textAppearanceLarge"
+                    android:text="@string/default_title"
+                    android:id="@+id/currentSong"/>
 
-                <!--<ListView
-                        android:layout_width="fill_parent"
-                        android:layout_height="fill_parent"
-                        android:id="@+id/playList"
-                        android:background="@drawable/ic_headphones"
-                        android:cacheColorHint="#00000000"
-                        />-->
+            <TextView
+                    android:background="#70000000"
+                    android:layout_width="fill_parent"
+                    android:layout_height="wrap_content"
+                    android:textAppearance="?android:attr/textAppearanceMedium"
+                    android:id="@+id/currentSongTitle"
+                    />
+        </LinearLayout>
     </FrameLayout>
-    <TextView
+
+    <LinearLayout
+            android:orientation="vertical"
             android:layout_width="fill_parent"
             android:layout_height="wrap_content"
-            android:textAppearance="?android:attr/textAppearanceLarge"
-            android:text=""
-            android:id="@+id/nextSong"
-            android:background="#ff000000"
             android:layout_above="@+id/SeekBar"
-            />
+            android:id="@+id/nextSong"
+            >
+
+        <TextView
+                android:layout_width="fill_parent"
+                android:layout_height="wrap_content"
+                android:textAppearance="?android:attr/textAppearanceMedium"
+                android:text=""
+                android:id="@+id/nextSongArtist"
+                android:background="#ff000000"
+                />
+        <TextView
+                android:layout_width="fill_parent"
+                android:layout_height="wrap_content"
+                android:textAppearance="?android:attr/textAppearanceSmall"
+                android:id="@+id/nextSongTitle"
+                android:background="#ff000000"
+                />
+
+    </LinearLayout>
 
     <SeekBar
             android:background="#ff000000"

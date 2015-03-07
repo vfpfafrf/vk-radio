@@ -35,8 +35,10 @@ public class RadioFragment extends Fragment implements Callback<Message>, Callba
 
     private RadioInfo radioInfo;
 
-    private TextView currentSong;
-    private TextView nextSong;
+    private TextView currentSongArtist;
+    private TextView currentSongTitle;
+    private TextView nextSongArtist;
+    private TextView nextSongTitle;
     private SeekBar seekBar;
     private ImageView albumCover;
     private Button buttonPlayStop;
@@ -84,9 +86,11 @@ public class RadioFragment extends Fragment implements Callback<Message>, Callba
             radioInfo = RadioBuilder.buildDefault();
         }
 
-        currentSong = (TextView) rootView.findViewById(R.id.currentSong);
+        currentSongArtist = (TextView) rootView.findViewById(R.id.currentSong);
+        currentSongTitle = (TextView) rootView.findViewById(R.id.currentSongTitle);
         albumCover = (ImageView) rootView.findViewById(R.id.albumArt);
-        nextSong = (TextView) rootView.findViewById(R.id.nextSong);
+        nextSongArtist = (TextView) rootView.findViewById(R.id.nextSongArtist);
+        nextSongTitle = (TextView) rootView.findViewById(R.id.nextSongTitle);
 
         currentState = State.PAUSE;
 
@@ -176,7 +180,8 @@ public class RadioFragment extends Fragment implements Callback<Message>, Callba
             switch (msg.what) {
                 case MediaPlayerService.MSG_SET_CURRENT_SONG:
                     SongInfo song = (SongInfo) msg.obj;
-                    currentSong.setText(song.toString());
+                    currentSongArtist.setText(song.getArtist());
+                    currentSongTitle.setText(song.getTitle());
                     break;
                 case MediaPlayerService.MSG_SET_DURATION:
                     seekBar.setMax((Integer) msg.obj);
@@ -185,9 +190,12 @@ public class RadioFragment extends Fragment implements Callback<Message>, Callba
                 case MediaPlayerService.MSG_TRACK_LIST_CHANGES:
                     Collection<SongInfo> data = (Collection) msg.obj;
                     if (data != null && !data.isEmpty() && data.size() > 1) {
-                        nextSong.setText(data.iterator().next().toString());
+                        SongInfo songInfo = data.iterator().next();
+                        nextSongArtist.setText(songInfo.getArtist());
+                        nextSongTitle.setText(songInfo.getTitle());
                     } else {
-                        nextSong.setText(next);
+                        nextSongArtist.setText(next);
+                        nextSongTitle.setText("");
                     }
                     break;
                 case MediaPlayerService.MSG_PAUSE:

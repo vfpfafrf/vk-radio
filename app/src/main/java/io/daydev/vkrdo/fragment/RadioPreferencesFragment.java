@@ -26,8 +26,9 @@ public class RadioPreferencesFragment extends PreferenceFragment {
     private static final String KEY_YEAR_TO = "vkrdo.yto";
     private static final String KEY_PLAY = "vkrdo.play";
     private static final String KEY_LINK = "vkrdo.link";
+    private static final String KEY_DANCE = "vkrdo.dance";
 
-    private static final String[] ALL = new String[]{KEY_ARTIST, KEY_GENRE, KEY_TITLE, KEY_MOOD, KEY_YEAR_FROM, KEY_YEAR_TO, KEY_PLAY, KEY_LINK};
+    private static final String[] ALL = new String[]{KEY_ARTIST, KEY_GENRE, KEY_TITLE, KEY_MOOD, KEY_YEAR_FROM, KEY_YEAR_TO, KEY_PLAY, KEY_LINK, KEY_DANCE};
 
     private RadioInfo radioInfo;
 
@@ -111,6 +112,17 @@ public class RadioPreferencesFragment extends PreferenceFragment {
                 radioInfo == null ? "" : radioInfo.getYearToAsString(),
                 R.string.pref_yt
         ));
+
+      /**  SeekBarPreference seekBarPreference = new SeekBarPreference(this.getActivity());
+        seekBarPreference.setMax(100);
+        seekBarPreference.setProgress(0);
+        seekBarPreference.setDialogMessage("Danceability");
+        seekBarPreference.setKey(KEY_DANCE);
+        seekBarPreference.setTitle("Danceability");
+        seekBarPreference.setSummary("Dance from 0 to 100");
+        seekBarPreference.setDefaultValue(0);
+
+        category.addPreference(seekBarPreference); */
 
         ButtonPreference preference = new ButtonPreference(this.getActivity());
         preference.setKey(KEY_PLAY);

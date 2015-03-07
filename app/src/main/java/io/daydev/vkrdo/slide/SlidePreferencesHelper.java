@@ -18,7 +18,6 @@ public class SlidePreferencesHelper {
         radios = new HashMap<>();
         navMenuTitles = new ArrayList<>();
 
-        // PreferenceHelper.clean(getSharedPreferences(PREF_NAME, MODE_PRIVATE), PREF_RADIO);
         preferencesMap = savedPreferences;
         if (preferencesMap == null) {
             preferencesMap = new HashMap<>();
@@ -26,7 +25,9 @@ public class SlidePreferencesHelper {
 
         radios.putAll(preferencesMap);
         for (Map.Entry<String, RadioInfo> me : preferencesMap.entrySet()) {
-            navMenuTitles.add(me.getValue().getTitle());
+            if (me.getValue().getTitle() != null && !me.getValue().getTitle().isEmpty()) {
+                navMenuTitles.add(me.getValue().getTitle());
+            }
         }
     }
 
@@ -87,10 +88,10 @@ public class SlidePreferencesHelper {
                         //newRadio.setTitle(getString(R.string.new_radio_title));
                         return false; // do not save radio without artist and genre
                     } else {
-                        newRadio.setTitle(newRadio.getArtist());
+                        newTitle = newRadio.getArtist();
                     }
                 } else {
-                    newRadio.setTitle(newRadio.getGenre());
+                    newTitle = newRadio.getGenre();
                 }
             }
 
@@ -101,6 +102,9 @@ public class SlidePreferencesHelper {
             newRadio.setTitle(newTitle);
         } else {
             String oldTitle = oldRadio.getTitle();
+            if (newTitle == null || newTitle.isEmpty()){
+                newTitle = oldTitle;
+            }
             radios.remove(oldTitle);
             preferencesMap.remove(oldTitle);
         }

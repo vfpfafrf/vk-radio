@@ -109,7 +109,7 @@ public class MainActivity extends VKActivity implements MediaEvent {
         currentState = null;
         preventBack = false;
 
-        // PreferenceHelper.clean(getSharedPreferences(PREF_NAME, MODE_PRIVATE), PREF_RADIO);
+        //PreferenceHelper.clean(getSharedPreferences(PREF_NAME, MODE_PRIVATE), PREF_RADIO);
         slidePreferencesHelper = new SlidePreferencesHelper();
         slidePreferencesHelper.onCreate(PreferenceHelper.getMap(getSharedPreferences(PREF_NAME, MODE_PRIVATE), PREF_RADIO));
 
@@ -458,9 +458,7 @@ public class MainActivity extends VKActivity implements MediaEvent {
                                 slideAdapter.setIcon(radioSource, android.R.drawable.ic_media_pause);
                                 break;
                             case MediaPlayerService.MSG_PLAY:
-                            case MediaPlayerService.MSG_PROGRESS:
-                            case MediaPlayerService.MSG_SEEK:
-                                slideAdapter.setIcon(radioSource, android.R.drawable.ic_media_play);
+                                slideAdapter.setIcon(radioSource, android.R.drawable.ic_media_play, android.R.drawable.ic_media_pause);
                                 break;
                         }
 

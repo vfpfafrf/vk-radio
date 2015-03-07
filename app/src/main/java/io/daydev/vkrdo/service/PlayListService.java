@@ -116,21 +116,29 @@ public class PlayListService extends AbstractLocalBinderService implements PlayL
             if (radio != null) {
                 final SongInfo songInfo = toResolve.poll();
                 if (songInfo != null) {
-                    vkService.getSongUriAsync(songInfo, new Callback<ResultTuple<String>>(){
-                        @Override
-                        public void callback(ResultTuple<String> result) {
-                            if (result != null){
-                                if (result.hasResult() && radio.isSame(currentRadio)){
-                                    songInfo.setLocation(result.getResult());
-                                    toPlay.add(songInfo);
-                                    Log.i("PlayListService", "resolved " + songInfo);
-                                    if (callback != null) {
-                                        callback.callback(songInfo);
+                    if (songInfo.getLocation() == null || songInfo.getLocation().isEmpty()) {
+                        vkService.getSongUriAsync(songInfo, new Callback<ResultTuple<String>>() {
+                            @Override
+                            public void callback(ResultTuple<String> result) {
+                                if (result != null) {
+                                    if (result.hasResult() && radio.isSame(currentRadio)) {
+                                        songInfo.setLocation(result.getResult());
+                                        toPlay.add(songInfo);
+                                        Log.i("PlayListService", "resolved " + songInfo);
+                                        if (callback != null) {
+                                            callback.callback(songInfo);
+                                        }
                                     }
                                 }
                             }
+                        });
+                    } else {
+                        toPlay.add(songInfo);
+                        Log.i("PlayListService", "resolved " + songInfo);
+                        if (callback != null) {
+                            callback.callback(songInfo);
                         }
-                    });
+                    }
                     if (callbackChecker != null && !callbackChecker.check(songInfo)) {
                         lastFmService.getArtistPhoto(songInfo, new Callback<Tuple<String, String>>() {
                             @Override

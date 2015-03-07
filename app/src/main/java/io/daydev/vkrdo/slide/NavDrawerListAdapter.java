@@ -55,6 +55,20 @@ public class NavDrawerListAdapter extends BaseAdapter {
         }
     }
 
+    public void setIcon(RadioInfo radioInfo, int iconSet, int iconUnset){
+        if (radioInfo != null) {
+            for (int i = 1; i < navDrawerItems.size(); i++) { // first is always "Add" button
+                NavDrawerItem item = navDrawerItems.get(i);
+                if (item.getTitle().equals(radioInfo.getTitle())) {
+                    item.setIcon(iconSet);
+                } else {
+                    item.setIcon(iconUnset);
+                }
+            }
+            notifyDataSetChanged();
+        }
+    }
+
     public void setIcon (RadioInfo radioInfo, int icon){
         if (radioInfo != null) {
             setIcon(radioInfo.getTitle(), icon);

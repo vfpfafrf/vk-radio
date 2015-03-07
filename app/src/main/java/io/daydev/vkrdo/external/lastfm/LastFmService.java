@@ -2,12 +2,12 @@ package io.daydev.vkrdo.external.lastfm;
 
 import android.os.AsyncTask;
 import android.util.Log;
+import de.umass.lastfm.*;
 import io.daydev.vkrdo.bean.SongInfo;
 import io.daydev.vkrdo.external.ConfigurationHolder;
 import io.daydev.vkrdo.util.Callback;
 import io.daydev.vkrdo.util.Tuple;
 import io.daydev.vkrdo.util.UserAgentList;
-import de.umass.lastfm.*;
 
 import java.util.HashMap;
 import java.util.Map;

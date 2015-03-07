@@ -54,7 +54,6 @@ public class MediaPlayerService extends AbstractLocalBinderService implements Me
     public static final int MSG_PAUSE = 7;
     public static final int MSG_STOP = 8;
     public static final int MSG_PROGRESS = 9;
-    public static final int MSG_SEEK = 10;
     public static final int MSG_ART = 11;
 
     /**

@@ -28,4 +28,5 @@
     <string name="pref_years">Десятилетие</string>
     <string name="pref_yt">Год по</string>
     <string name="delete_pref_btn">Удалить</string>
+    <string name="hint_vk">vk.com</string>
 </resources>
