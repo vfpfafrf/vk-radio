@@ -430,13 +430,7 @@ public class MediaPlayerService extends AbstractLocalBinderService implements Me
         if (mediaNotification == null || mediaSession == null) {
             return;
         }
-        Notification.Builder builder = mediaNotification.buildNotification(getApplicationContext(), action, songInfo, mediaSession.getSessionToken());
-        if (builder != null) {
-            Notification notification = builder.build();
-            NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-            notificationManager.notify(1, notification);
-
-            //startForeground(1, notification);
-        }
+        NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+        mediaNotification.buildNotification(notificationManager, getApplicationContext(), action, songInfo, mediaSession.getSessionToken());
     }
 }

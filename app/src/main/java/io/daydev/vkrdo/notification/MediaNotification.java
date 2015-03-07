@@ -1,6 +1,7 @@
 package io.daydev.vkrdo.notification;
 
 import android.app.Notification;
+import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.TaskStackBuilder;
 import android.content.Context;
@@ -67,9 +68,9 @@ public class MediaNotification implements MediaPlayerEvents {
     }
 
 
-    public Notification.Builder buildNotification(final Context applicationContext, final Notification.Action action, final SongInfo songInfo, final MediaSession.Token mediaSession) {
+    public void buildNotification(final NotificationManager notificationManager, final Context applicationContext, final Notification.Action action, final SongInfo songInfo, final MediaSession.Token mediaSession) {
         if (songInfo == null){
-            return null;
+            return;
         }
 
         Bitmap bitmap;
@@ -81,9 +82,9 @@ public class MediaNotification implements MediaPlayerEvents {
             if (!cacheContains(songInfo) && songInfo.getArtistPhoto() != null && !songInfo.getArtistPhoto().isEmpty()) {
                 try {
 
-                    AsyncTask<String, String, Bitmap> task = new AsyncTask<String, String, Bitmap>() {
+                    AsyncTask<String, String, Notification.Builder> task = new AsyncTask<String, String, Notification.Builder>() {
                         @Override
-                        protected Bitmap doInBackground(String... params) {
+                        protected Notification.Builder doInBackground(String... params) {
                             try {
                                 Bitmap image;
                                 if (!cacheContains(songInfo)) {
@@ -98,13 +99,21 @@ public class MediaNotification implements MediaPlayerEvents {
 
                                 if (image != null && bitmapCallback != null) {
                                     if (bitmapCallback.imageCheck(songInfo, image)){
-                                        buildImageNotification(applicationContext, action, songInfo, image, mediaSession);
+                                        return buildImageNotification(applicationContext, action, songInfo, image, mediaSession);
                                     }
                                 }
                             } catch (Exception e) {
                                 Log.e(TAG, "network error", e);
                             }
                             return null;
+                        }
+
+                        @Override
+                        protected void onPostExecute(Notification.Builder builder) {
+                            if (builder != null){
+                                Notification notification = builder.build();
+                                notificationManager.notify(1, notification);
+                            }
                         }
                     };
                     task.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, songInfo.getArtistPhoto());
@@ -117,7 +126,9 @@ public class MediaNotification implements MediaPlayerEvents {
             bitmap = getCache(songInfo);
         }
 
-        return buildImageNotification(applicationContext, action, songInfo, bitmap, mediaSession);
+        Notification.Builder builder = buildImageNotification(applicationContext, action, songInfo, bitmap, mediaSession);
+        Notification notification = builder.build();
+        notificationManager.notify(1, notification);
     }
 
     private Notification.Builder buildImageNotification(Context applicationContext, Notification.Action action, SongInfo songInfo, Bitmap image, final MediaSession.Token mediaSession) {
