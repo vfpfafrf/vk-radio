@@ -6,6 +6,7 @@
     <string name="pause_str">PAUSE</string>
     <string name="set_preferences">radio settings</string>
     <string name="radio_settings">Radio settings</string>
+    <string name="add_to_fav">Add to fav</string>
     <string name="image_hint">album art</string>
     <string name="default_title">press play to start…</string>
     <string name="home_motivate">Just type your fav artist and start listen</string>

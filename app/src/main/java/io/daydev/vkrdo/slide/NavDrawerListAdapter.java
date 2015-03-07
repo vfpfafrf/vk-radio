@@ -57,11 +57,11 @@ public class NavDrawerListAdapter extends BaseAdapter {
 
     public void setIcon(RadioInfo radioInfo, int iconSet, int iconUnset){
         if (radioInfo != null) {
-            for (int i = 1; i < navDrawerItems.size(); i++) { // first is always "Add" button
+            for (int i = 2; i < navDrawerItems.size(); i++) { // first is always "Add" button, and second is "fav bands fragment"
                 NavDrawerItem item = navDrawerItems.get(i);
                 if (item.getTitle().equals(radioInfo.getTitle())) {
                     item.setIcon(iconSet);
-                } else {
+                } else if (item.getIcon() == iconSet){
                     item.setIcon(iconUnset);
                 }
             }

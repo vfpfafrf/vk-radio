@@ -43,6 +43,7 @@ public class RadioFragment extends Fragment implements Callback<Message>, Callba
     private ImageView albumCover;
     private Button buttonPlayStop;
     private Button buttonNext;
+    private MenuItem actionFav;
 
     private enum State {
         PLAY, PAUSE
@@ -65,6 +66,7 @@ public class RadioFragment extends Fragment implements Callback<Message>, Callba
     public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
         super.onCreateOptionsMenu(menu, inflater);
         inflater.inflate(R.menu.main, menu);
+        actionFav = menu.findItem(R.id.action_fav);
     }
 
     @Override
@@ -220,6 +222,16 @@ public class RadioFragment extends Fragment implements Callback<Message>, Callba
                         albumCover.setImageResource(R.drawable.ic_headphones);
                     } else {
                         albumCover.setImageBitmap((Bitmap) msg.obj);
+                    }
+                    break;
+                case MediaPlayerService.MSG_FAV:
+                    if (actionFav != null) {
+                        actionFav.setIcon(android.R.drawable.star_on);
+                    }
+                    break;
+                case MediaPlayerService.MSG_NOT_FAV:
+                    if (actionFav != null) {
+                        actionFav.setIcon(android.R.drawable.star_off);
                     }
                     break;
             }

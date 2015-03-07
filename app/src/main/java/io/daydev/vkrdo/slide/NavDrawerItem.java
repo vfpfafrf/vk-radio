@@ -11,6 +11,10 @@ public class NavDrawerItem {
         return new NavDrawerItem(radioInfo.getTitle(), android.R.drawable.ic_media_pause);
     }
 
+    public static NavDrawerItem generateVirtual(RadioInfo radioInfo){
+        return new NavDrawerItem(radioInfo.getTitle(), android.R.drawable.ic_media_pause, true, "V");
+    }
+
     private String title;
     private int icon;
     private String count = "0";

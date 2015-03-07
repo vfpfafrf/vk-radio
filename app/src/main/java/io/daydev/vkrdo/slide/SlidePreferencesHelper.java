@@ -13,15 +13,13 @@ public class SlidePreferencesHelper {
     private List<String> navMenuTitles;
     private Map<String, RadioInfo> radios;
     private Map<String, RadioInfo> preferencesMap;
+    private ArrayList<String> favoritesArtists;
 
-    public void onCreate(Map<String, RadioInfo> savedPreferences){
+    public void onCreate(Map<String, RadioInfo> savedPreferences, ArrayList<String> favoritesArtists){
         radios = new HashMap<>();
         navMenuTitles = new ArrayList<>();
 
-        preferencesMap = savedPreferences;
-        if (preferencesMap == null) {
-            preferencesMap = new HashMap<>();
-        }
+        preferencesMap = savedPreferences == null ? new HashMap<String, RadioInfo>() : savedPreferences;
 
         radios.putAll(preferencesMap);
         for (Map.Entry<String, RadioInfo> me : preferencesMap.entrySet()) {
@@ -29,6 +27,8 @@ public class SlidePreferencesHelper {
                 navMenuTitles.add(me.getValue().getTitle());
             }
         }
+
+        this.favoritesArtists = (favoritesArtists == null ? new ArrayList<String>() : favoritesArtists);
     }
 
     public Collection<NavDrawerItem> convertToNavDrawItems(){
@@ -137,10 +137,30 @@ public class SlidePreferencesHelper {
         radios.put(radioInfo.getTitle(), radioInfo);
         if (!navMenuTitles.contains(radioInfo.getTitle())){
             navMenuTitles.add(radioInfo.getTitle());
-            slideAdapter.add(NavDrawerItem.generate(radioInfo));
+            slideAdapter.add(NavDrawerItem.generateVirtual(radioInfo));
             return true;
         }
         return false;
     }
 
+
+    public boolean addToFav(String atrist){
+        if (!favoritesArtists.contains(atrist)) {
+            favoritesArtists.add(atrist);
+            return true;
+        }
+        return  false;
+    }
+
+    public boolean isFavorite(String artist){
+        return favoritesArtists.contains(artist);
+    }
+
+    public void removeFromFav (String artist){
+        favoritesArtists.remove(artist);
+    }
+
+    public ArrayList<String> getFavoritesArtists() {
+        return favoritesArtists;
+    }
 }

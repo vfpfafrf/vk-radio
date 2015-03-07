@@ -62,10 +62,17 @@ public abstract class AbstractEchoService implements PlaylistSuplier {
             params.addGenre("pop");
             params.setType(PlaylistParams.PlaylistType.GENRE_RADIO);
         } else {
+            String artist = radioInfo.getArtist();
+            if (artist != null && !artist.isEmpty()) {
 
-
-            if (radioInfo.getArtist() != null && !radioInfo.getArtist().isEmpty()) {
-                params.addArtist(radioInfo.getArtist());
+                if (artist.contains(",") ){
+                    String[] artists = artist.split(",");
+                    for(String artistTmp : artists){
+                        params.addArtist(artistTmp.trim());
+                    }
+                } else {
+                    params.addArtist(artist);
+                }
 
                 if (radioInfo.getMood() != null && !radioInfo.getMood().isEmpty()) {
                     params.addMood(radioInfo.getMood());

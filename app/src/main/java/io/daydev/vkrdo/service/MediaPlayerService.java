@@ -55,6 +55,8 @@ public class MediaPlayerService extends AbstractLocalBinderService implements Me
     public static final int MSG_STOP = 8;
     public static final int MSG_PROGRESS = 9;
     public static final int MSG_ART = 11;
+    public static final int MSG_FAV = 12;
+    public static final int MSG_NOT_FAV = 13;
 
     /**
      * calls callback when song added
