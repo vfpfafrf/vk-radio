@@ -135,12 +135,17 @@ public class StaticEchoService extends AbstractEchoService {
                                     String title = jObject.getString("title");
                                     String url = jObject.getString("url");
 
-                                    String check = title.replaceAll(" ", "");
-                                    if (!check.toLowerCase().contains("(remix)") && !check.toLowerCase().contains("(mix)")) {
-                                        SongInfo songInfo = new SongInfo(artist, title, url, null);
+                                    if (artist != null && title != null && url != null) {
+                                        title = title.trim();
+                                        artist = artist.trim();
 
-                                        if (!playList.contains(songInfo)) {
-                                            playList.add(songInfo);
+                                        String check = title.replaceAll(" ", "");
+                                        if (!check.toLowerCase().contains("(remix)") && !check.toLowerCase().contains("(mix)")) {
+                                            SongInfo songInfo = new SongInfo(artist, title, url, null);
+
+                                            if (!playList.contains(songInfo)) {
+                                                playList.add(songInfo);
+                                            }
                                         }
                                     }
                                     offset++;
