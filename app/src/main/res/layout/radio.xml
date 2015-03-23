@@ -56,6 +56,7 @@
                     />&ndash;&gt;
         </LinearLayout>-->
 
+
         <LinearLayout
                 android:orientation="vertical"
                 android:layout_width="fill_parent"
@@ -84,14 +85,19 @@
                     />
 
         </LinearLayout>
-
     </FrameLayout>
 
+
+
+<!--
     <ListView
             android:layout_width="fill_parent"
             android:layout_height="wrap_content"
             android:id="@+id/playlist"/>
+-->
+
     </LinearLayout>
+
 
     <!--    <LinearLayout
                 android:orientation="vertical"

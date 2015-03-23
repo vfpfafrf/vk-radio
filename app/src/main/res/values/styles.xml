@@ -2,6 +2,9 @@
 <resources>
     <!-- inherit from the material theme -->
     <style name="AppTheme" parent="android:Theme.Material.Light.DarkActionBar">
+
+
+
         <!-- Main theme colors -->
         <!--   your app branding color for the app bar -->
 <!--

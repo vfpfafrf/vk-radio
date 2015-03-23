@@ -8,7 +8,10 @@ import android.os.Message;
 import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 import android.view.*;
-import android.widget.*;
+import android.widget.ImageButton;
+import android.widget.ImageView;
+import android.widget.SeekBar;
+import android.widget.TextView;
 import io.daydev.vkrdo.MediaEvent;
 import io.daydev.vkrdo.R;
 import io.daydev.vkrdo.bean.RadioBuilder;
@@ -19,9 +22,7 @@ import io.daydev.vkrdo.util.Callback;
 import io.daydev.vkrdo.util.CallbackChecker;
 
 import java.io.Serializable;
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.List;
 
 /**
  * Radio player fragment
@@ -44,20 +45,17 @@ public class RadioFragment extends Fragment implements Callback<Message>, Callba
     private ImageButton buttonNext;
     private MenuItem actionFav;
 
+/*
     private ListView playlist;
     private ArrayAdapter<String> playlistAdapter;
     private List<String> playlistItems = new ArrayList<>();
+*/
 
     private enum State {
         PLAY, PAUSE
     }
 
     private State currentState;
-
-    // cache resources string
-    private String play;
-    private String pause;
-    private String next;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -120,11 +118,11 @@ public class RadioFragment extends Fragment implements Callback<Message>, Callba
             }
         });
 
-        playlist = (ListView) rootView.findViewById(R.id.playlist);
+        /*playlist = (ListView) rootView.findViewById(R.id.playlist);
         playlistAdapter = new ArrayAdapter<>(rootView.getContext(),
                 android.R.layout.simple_list_item_1,
                 playlistItems);
-        playlist.setAdapter(playlistAdapter);
+        playlist.setAdapter(playlistAdapter);*/
 
 
         seekBar = (SeekBar) rootView.findViewById(R.id.SeekBar);
@@ -148,10 +146,6 @@ public class RadioFragment extends Fragment implements Callback<Message>, Callba
         seekBar.setMax(100);
 
         sendToMediaService(MediaPlayerService.ACTION_STATUS);
-
-        play = getString(R.string.play_str);
-        pause = getString(R.string.pause_str);
-        next = getString(R.string.next_song_wait);
 
         if (arguments != null) {
             String param = (String) arguments.getSerializable(EXTRA_PARAM);
@@ -200,7 +194,7 @@ public class RadioFragment extends Fragment implements Callback<Message>, Callba
                     break;
                 case MediaPlayerService.MSG_TRACK_LIST_CHANGES:
                     Collection<SongInfo> data = (Collection) msg.obj;
-                    if (data != null && !data.isEmpty() && data.size() > 1) {
+                    /*if (data != null && !data.isEmpty() && data.size() > 1) {
                         playlistItems.clear();
                         for(SongInfo songInfo : data){
                             playlistItems.add(songInfo.toString());
@@ -214,23 +208,20 @@ public class RadioFragment extends Fragment implements Callback<Message>, Callba
                         playlistItems.clear();
                     }
                     playlistAdapter.notifyDataSetChanged();
-
+*/
                     break;
                 case MediaPlayerService.MSG_PAUSE:
                     currentState = State.PAUSE;
-                    //buttonPlayStop.setText(play);
                     buttonPlayStop.setImageResource(android.R.drawable.ic_media_play);
                     break;
                 case MediaPlayerService.MSG_PLAY:
                     buttonNext.setEnabled(true); //eq in any way - this radio started play - so we can use next
                     currentState = State.PLAY;
-                    //buttonPlayStop.setText(pause);
                     buttonPlayStop.setImageResource(android.R.drawable.ic_media_pause);
                     break;
                 case MediaPlayerService.MSG_STOP:
                     seekBar.setProgress(0);
                     currentState = State.PAUSE;
-                    //buttonPlayStop.setText(play);
                     buttonPlayStop.setImageResource(android.R.drawable.ic_media_play);
                     break;
                 case MediaPlayerService.MSG_PROGRESS:
