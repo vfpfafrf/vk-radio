@@ -24,7 +24,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 /**
  *
  */
-public class PlayListService extends AbstractLocalBinderService implements PlayList {
+public class PlayListService implements PlayList {
 
     public static final SongInfo WAIT = new SongInfo("waiting for network...","", null, null);
     public static final SongInfo FAIL = new SongInfo("error while generate playlist...","", null, null);
@@ -47,6 +47,9 @@ public class PlayListService extends AbstractLocalBinderService implements PlayL
 
     private Handler resolverHandler;
 
+    public PlayListService() {
+        this.resolverHandler = new Handler();
+    }
 
     @Override
     public boolean isPlayListStated() {
@@ -214,16 +217,6 @@ public class PlayListService extends AbstractLocalBinderService implements PlayL
 
     public void setCallbackChecker(CallbackChecker<SongInfo> checker){
         this.callbackChecker = checker;
-    }
-
-
-    /**
-     * Called by the system when the service is first created.  Do not call this method directly.
-     */
-    @Override
-    public void onCreate() {
-        super.onCreate();
-        resolverHandler = new Handler();
     }
 
 

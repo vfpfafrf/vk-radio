@@ -204,8 +204,35 @@ public class MainActivity extends VKActivity implements MediaEvent {
                     .commit();
         }
         VKUIHelper.onCreate(this);
+
+        IntentFilter receiverFilter = new IntentFilter(Intent.ACTION_HEADSET_PLUG);
+        registerReceiver(headset, receiverFilter);
+
     }
 
+    private final BroadcastReceiver headset = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            if(intent.getAction().equals(Intent.ACTION_HEADSET_PLUG)) {
+                int state = intent.getIntExtra("state", -1);
+                switch(state) {
+                    case 0: // unplugged - send pause event
+                        Intent pauseIntent = new Intent(MediaEvent.EVENT);
+                        pauseIntent.putExtra(MediaEvent.TYPE, MediaEvent.MEDIAPLAYER_COMMAND);
+
+                        pauseIntent.putExtra(MediaEvent.DATA_RADIO, currentRadio);
+                        pauseIntent.putExtra(MediaEvent.DATA_MESSAGE_CODE, MediaPlayerService.MSG_PAUSE);
+                        LocalBroadcastManager.getInstance(MainActivity.this).sendBroadcast(intent);
+                        break;
+                    case 1: // plugged - do nothing
+                        break;
+
+                }
+            }
+
+
+        }
+    };
 
     /**
      * Slide menu item click listener

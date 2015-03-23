@@ -8,10 +8,7 @@ import android.os.Message;
 import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 import android.view.*;
-import android.widget.Button;
-import android.widget.ImageView;
-import android.widget.SeekBar;
-import android.widget.TextView;
+import android.widget.*;
 import io.daydev.vkrdo.MediaEvent;
 import io.daydev.vkrdo.R;
 import io.daydev.vkrdo.bean.RadioBuilder;
@@ -22,7 +19,9 @@ import io.daydev.vkrdo.util.Callback;
 import io.daydev.vkrdo.util.CallbackChecker;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 
 /**
  * Radio player fragment
@@ -37,13 +36,17 @@ public class RadioFragment extends Fragment implements Callback<Message>, Callba
 
     private TextView currentSongArtist;
     private TextView currentSongTitle;
-    private TextView nextSongArtist;
-    private TextView nextSongTitle;
+    //private TextView nextSongArtist;
+    //private TextView nextSongTitle;
     private SeekBar seekBar;
     private ImageView albumCover;
-    private Button buttonPlayStop;
-    private Button buttonNext;
+    private ImageButton buttonPlayStop;
+    private ImageButton buttonNext;
     private MenuItem actionFav;
+
+    private ListView playlist;
+    private ArrayAdapter<String> playlistAdapter;
+    private List<String> playlistItems = new ArrayList<>();
 
     private enum State {
         PLAY, PAUSE
@@ -91,12 +94,12 @@ public class RadioFragment extends Fragment implements Callback<Message>, Callba
         currentSongArtist = (TextView) rootView.findViewById(R.id.currentSong);
         currentSongTitle = (TextView) rootView.findViewById(R.id.currentSongTitle);
         albumCover = (ImageView) rootView.findViewById(R.id.albumArt);
-        nextSongArtist = (TextView) rootView.findViewById(R.id.nextSongArtist);
-        nextSongTitle = (TextView) rootView.findViewById(R.id.nextSongTitle);
+        //nextSongArtist = (TextView) rootView.findViewById(R.id.nextSongArtist);
+        //nextSongTitle = (TextView) rootView.findViewById(R.id.nextSongTitle);
 
         currentState = State.PAUSE;
 
-        buttonNext = (Button) rootView.findViewById(R.id.ButtonNext);
+        buttonNext = (ImageButton) rootView.findViewById(R.id.ButtonNext);
         buttonNext.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -104,7 +107,7 @@ public class RadioFragment extends Fragment implements Callback<Message>, Callba
             }
         });
 
-        buttonPlayStop = (Button) rootView.findViewById(R.id.ButtonPlayStop);
+        buttonPlayStop = (ImageButton) rootView.findViewById(R.id.ButtonPlayStop);
         buttonPlayStop.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -116,6 +119,12 @@ public class RadioFragment extends Fragment implements Callback<Message>, Callba
                 }
             }
         });
+
+        playlist = (ListView) rootView.findViewById(R.id.playlist);
+        playlistAdapter = new ArrayAdapter<>(rootView.getContext(),
+                android.R.layout.simple_list_item_1,
+                playlistItems);
+        playlist.setAdapter(playlistAdapter);
 
 
         seekBar = (SeekBar) rootView.findViewById(R.id.SeekBar);
@@ -192,27 +201,37 @@ public class RadioFragment extends Fragment implements Callback<Message>, Callba
                 case MediaPlayerService.MSG_TRACK_LIST_CHANGES:
                     Collection<SongInfo> data = (Collection) msg.obj;
                     if (data != null && !data.isEmpty() && data.size() > 1) {
-                        SongInfo songInfo = data.iterator().next();
-                        nextSongArtist.setText(songInfo.getArtist());
-                        nextSongTitle.setText(songInfo.getTitle());
+                        playlistItems.clear();
+                        for(SongInfo songInfo : data){
+                            playlistItems.add(songInfo.toString());
+                        }
+                        //SongInfo songInfo = data.iterator().next();
+                        //nextSongArtist.setText(songInfo.getArtist());
+                        //nextSongTitle.setText(songInfo.getTitle());
                     } else {
-                        nextSongArtist.setText(next);
-                        nextSongTitle.setText("");
+                        //nextSongArtist.setText(next);
+                        //nextSongTitle.setText("");
+                        playlistItems.clear();
                     }
+                    playlistAdapter.notifyDataSetChanged();
+
                     break;
                 case MediaPlayerService.MSG_PAUSE:
                     currentState = State.PAUSE;
-                    buttonPlayStop.setText(play);
+                    //buttonPlayStop.setText(play);
+                    buttonPlayStop.setImageResource(android.R.drawable.ic_media_play);
                     break;
                 case MediaPlayerService.MSG_PLAY:
                     buttonNext.setEnabled(true); //eq in any way - this radio started play - so we can use next
                     currentState = State.PLAY;
-                    buttonPlayStop.setText(pause);
+                    //buttonPlayStop.setText(pause);
+                    buttonPlayStop.setImageResource(android.R.drawable.ic_media_pause);
                     break;
                 case MediaPlayerService.MSG_STOP:
                     seekBar.setProgress(0);
                     currentState = State.PAUSE;
-                    buttonPlayStop.setText(play);
+                    //buttonPlayStop.setText(play);
+                    buttonPlayStop.setImageResource(android.R.drawable.ic_media_play);
                     break;
                 case MediaPlayerService.MSG_PROGRESS:
                     seekBar.setProgress((Integer) msg.obj);

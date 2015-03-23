@@ -43,7 +43,6 @@ public class MediaPlayerService extends AbstractLocalBinderService implements Me
     private MediaNotification mediaNotification;
 
     private PlayListService playListService;
-    private boolean playListServiceBound = false;
 
     private boolean startedNewRadio = false;
 
@@ -139,10 +138,6 @@ public class MediaPlayerService extends AbstractLocalBinderService implements Me
     @Override
     public void onCreate() {
         super.onCreate();
-        if (!playListServiceBound) {
-            Intent serviceIntent = new Intent(this, PlayListService.class);
-            bindService(serviceIntent, this, Context.BIND_AUTO_CREATE);
-        }
     }
 
     @Override
@@ -174,7 +169,6 @@ public class MediaPlayerService extends AbstractLocalBinderService implements Me
         mediaPlayer.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
             @Override
             public void onCompletion(MediaPlayer mp) {
-                Log.w("mediaPlayer", "------------------------on complete--------");
                 mediaController.getTransportControls().skipToNext();
             }
         });
@@ -186,6 +180,10 @@ public class MediaPlayerService extends AbstractLocalBinderService implements Me
                 return false; //todo: handle error and return true)
             }
         });
+
+        if (playListService == null){
+            playListService = new PlayListService();
+        }
 
         mediaSession = new MediaSession(getApplicationContext(), "VK radio media session");
         mediaController = new MediaController(getApplicationContext(), mediaSession.getSessionToken());
@@ -329,10 +327,6 @@ public class MediaPlayerService extends AbstractLocalBinderService implements Me
     @Override
     public void onDestroy() {
         super.onDestroy();
-        if (playListServiceBound) {
-            unbindService(this);
-            playListServiceBound = false;
-        }
         if (mediaPlayer != null) {
             if (mediaPlayer.isPlaying()) {
                 mediaPlayer.stop();
@@ -347,47 +341,7 @@ public class MediaPlayerService extends AbstractLocalBinderService implements Me
         if (mediaSession != null) {
             mediaSession.release();
         }
-        if (playListServiceBound) {
-            unbindService(this);
-            playListServiceBound = false;
-        }
-
         return super.onUnbind(intent);
-    }
-
-
-    /**
-     * Called when a connection to the Service has been established, with
-     * the {@link android.os.IBinder} of the communication channel to the
-     * Service.
-     *
-     * @param name    The concrete component name of the service that has
-     *                been connected.
-     * @param service The IBinder of the Service's communication channel,
-     */
-    @Override
-    public void onServiceConnected(ComponentName name, IBinder service) {
-        AbstractLocalBinderService.LocalBinder<PlayListService> binder = (AbstractLocalBinderService.LocalBinder<PlayListService>) service;
-        playListService = binder.getService();
-        playListServiceBound = true;
-
-        Log.e("MediService", "onServiceConnected " + name);
-    }
-
-    /**
-     * Called when a connection to the Service has been lost.  This typically
-     * happens when the process hosting the service has crashed or been killed.
-     * This does <em>not</em> remove the ServiceConnection itself -- this
-     * binding to the service will remain active, and you will receive a call
-     * to {@link #onServiceConnected} when the Service is next running.
-     *
-     * @param name The concrete component name of the service whose
-     *             connection has been lost.
-     */
-    @Override
-    public void onServiceDisconnected(ComponentName name) {
-        Log.e("MediService", "onServiceDisconnected " + name);
-        playListServiceBound = false;
     }
 
 
@@ -432,5 +386,15 @@ public class MediaPlayerService extends AbstractLocalBinderService implements Me
         }
         NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
         mediaNotification.buildNotification(notificationManager, getApplicationContext(), action, songInfo, mediaSession.getSessionToken());
+    }
+
+    @Override
+    public void onServiceConnected(ComponentName name, IBinder service) {
+
+    }
+
+    @Override
+    public void onServiceDisconnected(ComponentName name) {
+
     }
 }

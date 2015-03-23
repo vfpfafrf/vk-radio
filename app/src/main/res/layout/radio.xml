@@ -6,24 +6,18 @@
         xmlns:android="http://schemas.android.com/apk/res/android"
         >
 
-    <!--    <TextView
-                android:background="#00000000"
-                android:layout_width="fill_parent"
-                android:layout_height="wrap_content"
-                android:textAppearance="?android:attr/textAppearanceLarge"
-                android:text="@string/default_title"
-                android:id="@+id/currentSong" android:layout_marginTop="5dp" android:layout_marginBottom="10dp"
-                />
-
-                                  android:layout_below="@id/currentSong"
-    -->
+    <LinearLayout
+            android:layout_width="fill_parent"
+            android:layout_height="fill_parent"
+            android:orientation="vertical"
+            android:layout_above="@+id/SeekBar">
 
     <FrameLayout
             android:layout_width="fill_parent"
             android:layout_height="fill_parent"
             android:orientation="vertical"
             android:gravity="center"
-            android:layout_above="@+id/nextSong">
+            >
 
 
         <ImageView
@@ -41,10 +35,87 @@
               android:background="@drawable/gradient_shape"/>
 
 
-        <LinearLayout
+        <!--<LinearLayout
                 android:orientation="vertical"
                 android:layout_width="fill_parent"
                 android:layout_height="fill_parent" android:layout_gravity="center_horizontal|top">
+           &lt;!&ndash; <TextView
+                    android:background="#70000000"
+                    android:layout_width="fill_parent"
+                    android:layout_height="wrap_content"
+                    android:textAppearance="?android:attr/textAppearanceLarge"
+                    android:text="@string/default_title"
+                    android:id="@+id/currentSong"/>
+
+            <TextView
+                    android:background="#70000000"
+                    android:layout_width="fill_parent"
+                    android:layout_height="wrap_content"
+                    android:textAppearance="?android:attr/textAppearanceMedium"
+                    android:id="@+id/currentSongTitle"
+                    />&ndash;&gt;
+        </LinearLayout>-->
+
+        <LinearLayout
+                android:orientation="vertical"
+                android:layout_width="fill_parent"
+                android:layout_height="wrap_content"
+                android:id="@+id/nextSong"
+                android:layout_gravity="center_horizontal|bottom"
+                android:background="#55212121"
+                >
+
+            <TextView
+                    android:layout_width="fill_parent"
+                    android:layout_height="wrap_content"
+                    android:textAppearance="?android:attr/textAppearanceLarge"
+                    android:textSize="@dimen/abc_text_size_display_1_material"
+                    android:text="@string/default_title"
+                    android:textColor="@color/vk_smoke_white"
+                    android:id="@+id/currentSong"/>
+
+            <TextView
+                    android:layout_width="fill_parent"
+                    android:layout_height="wrap_content"
+                    android:textAppearance="?android:attr/textAppearanceMedium"
+                    android:textSize="@dimen/abc_text_size_body_1_material"
+                    android:textColor="@color/vk_smoke_white"
+                    android:id="@+id/currentSongTitle"
+                    />
+
+        </LinearLayout>
+
+    </FrameLayout>
+
+    <ListView
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:id="@+id/playlist"/>
+    </LinearLayout>
+
+    <!--    <LinearLayout
+                android:orientation="vertical"
+                android:layout_width="fill_parent"
+                android:layout_height="wrap_content"
+                android:layout_above="@+id/SeekBar"
+                android:id="@+id/nextSong"
+                >
+
+            &lt;!&ndash;<TextView
+                    android:layout_width="fill_parent"
+                    android:layout_height="wrap_content"
+                    android:textAppearance="?android:attr/textAppearanceMedium"
+                    android:text=""
+                    android:id="@+id/nextSongArtist"
+                    android:background="#ff000000"
+                    />
+            <TextView
+                    android:layout_width="fill_parent"
+                    android:layout_height="wrap_content"
+                    android:textAppearance="?android:attr/textAppearanceSmall"
+                    android:id="@+id/nextSongTitle"
+                    android:background="#ff000000"
+                    />&ndash;&gt;
             <TextView
                     android:background="#70000000"
                     android:layout_width="fill_parent"
@@ -60,62 +131,48 @@
                     android:textAppearance="?android:attr/textAppearanceMedium"
                     android:id="@+id/currentSongTitle"
                     />
-        </LinearLayout>
-    </FrameLayout>
 
-    <LinearLayout
-            android:orientation="vertical"
-            android:layout_width="fill_parent"
-            android:layout_height="wrap_content"
-            android:layout_above="@+id/SeekBar"
-            android:id="@+id/nextSong"
-            >
-
-        <TextView
-                android:layout_width="fill_parent"
-                android:layout_height="wrap_content"
-                android:textAppearance="?android:attr/textAppearanceMedium"
-                android:text=""
-                android:id="@+id/nextSongArtist"
-                android:background="#ff000000"
-                />
-        <TextView
-                android:layout_width="fill_parent"
-                android:layout_height="wrap_content"
-                android:textAppearance="?android:attr/textAppearanceSmall"
-                android:id="@+id/nextSongTitle"
-                android:background="#ff000000"
-                />
-
-    </LinearLayout>
+        </LinearLayout>-->
 
     <SeekBar
-            android:background="#ff000000"
+            android:background="@color/primary_material_dark"
             android:id="@+id/SeekBar"
             android:layout_height="wrap_content"
             android:layout_width="fill_parent"
-            android:layout_alignParentBottom="false" android:layout_above="@+id/Buttons"/>
+            android:layout_alignParentBottom="false"
+            android:layout_above="@+id/Buttons"
+            />
 
     <LinearLayout
             android:background="#ff000000"
             android:layout_width="fill_parent"
             android:layout_height="wrap_content"
             android:gravity="center"
-            android:id="@+id/Buttons" android:layout_alignParentBottom="true">
-        <Button
-                android:text="@string/play_str"
+            android:id="@+id/Buttons"
+            android:layout_alignParentBottom="true"
+            android:weightSum="1">
+
+        <ImageButton
+                android:src="@android:drawable/ic_media_play"
+                style="?android:attr/borderlessButtonStyle"
                 android:textSize="15pt"
                 android:textStyle="bold"
                 android:id="@+id/ButtonPlayStop"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"/>
-        <Button
-                android:text="@string/next_str"
+                android:layout_width="0dp"
+                android:layout_height="64dp"
+                android:layout_weight="0.4"
+                android:contentDescription="@string/play_str"/>
+        <ImageButton
+                style="?android:attr/borderlessButtonStyle"
+                android:src="@android:drawable/ic_media_next"
                 android:textSize="15pt"
                 android:textStyle="bold"
                 android:id="@+id/ButtonNext"
-                android:layout_width="fill_parent"
-                android:layout_height="wrap_content" android:enabled="false"/>
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:enabled="false"
+                android:layout_weight="0.6"
+                android:contentDescription="@string/next_str"/>
     </LinearLayout>
 
 </RelativeLayout>
