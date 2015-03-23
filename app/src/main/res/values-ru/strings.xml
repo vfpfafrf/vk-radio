@@ -30,4 +30,5 @@
     <string name="delete_pref_btn">Удалить</string>
     <string name="hint_vk">vk.com</string>
     <string name="add_to_fav">Добавить исполнителя в избранное</string>
+    <string name="fav_title">Favorites</string>
 </resources>

@@ -132,7 +132,7 @@ public class MainActivity extends VKActivity implements MediaEvent {
         rightDrawerList = (ListView) findViewById(R.id.right_drawer);
 
         mDrawerList.setOnItemClickListener(new SlideMenuClickListener());
-        rightDrawerList.setOnItemClickListener(new RihtMenuClickListener());
+        rightDrawerList.setOnItemClickListener(new RightMenuClickListener());
 
         List<NavDrawerItem> navDrawerItems = new ArrayList<>();
         navDrawerItems.add(new NavDrawerItem(getString(R.string.add_radio_slide), android.R.drawable.ic_input_add));
@@ -246,7 +246,7 @@ public class MainActivity extends VKActivity implements MediaEvent {
         }
     }
 
-    private class RihtMenuClickListener implements ListView.OnItemClickListener {
+    private class RightMenuClickListener implements ListView.OnItemClickListener {
 
         @Override
         public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
@@ -350,7 +350,7 @@ public class MainActivity extends VKActivity implements MediaEvent {
                 break;
             case 1:
                 fragment = new FavoriteFragment();
-                title = "Favorites";
+                title = getString(R.string.fav_title);
                 currentState = State.FAV;
                 bundle = new Bundle();
                 bundle.putStringArrayList(FavoriteFragment.FAV_PARAM, slidePreferencesHelper.getFavoritesArtists());
@@ -372,11 +372,12 @@ public class MainActivity extends VKActivity implements MediaEvent {
                 slideAdapter.setIcon(currentRadio, android.R.drawable.ic_media_pause);
         }
 
-        if (bundle != null) {
-            fragment.setArguments(bundle);
-        }
         if (fragment != null) {
             try {
+                if (bundle != null) {
+                    fragment.setArguments(bundle);
+                }
+
                 FragmentManager fragmentManager = getFragmentManager();
                 FragmentTransaction transaction = fragmentManager
                         .beginTransaction()
@@ -658,7 +659,7 @@ public class MainActivity extends VKActivity implements MediaEvent {
                 rightDrawerList.clearChoices();
             } else if(f instanceof FavoriteFragment){
                 currentState = State.FAV;
-                setTitle("Favorites");
+                setTitle(R.string.fav_title);
             }
         } else {
             if (doubleBackToExitPressedOnce) {

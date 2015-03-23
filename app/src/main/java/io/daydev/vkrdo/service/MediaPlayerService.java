@@ -111,7 +111,6 @@ public class MediaPlayerService extends AbstractLocalBinderService implements Me
                 }
                 break;
             case ACTION_STATUS:
-                Log.e("omfg", "action status " + playListService.isPlayListStated());
                 if (playListService.isPlayListStated()) {
                     sendMessage(MSG_TRACK_LIST_CHANGES, playListService.getToPlaySimpleFormat());
                     if (mediaPlayer != null && mediaPlayer.isPlaying()) {
@@ -176,8 +175,11 @@ public class MediaPlayerService extends AbstractLocalBinderService implements Me
             @Override
             public boolean onError(MediaPlayer mp, int what, int extra) {
                 Log.e("OMFG", "Ahtung ahtung"+what+" "+extra);
-                sendError("MediaPlayer error what="+what+" extra="+extra);
-                return false; //todo: handle error and return true)
+                if (what != -38 && extra != 0) { // pause called in wrong state
+                    sendError("MediaPlayer error what=" + what + " extra=" + extra);
+                    return false; //todo: handle error and return true)
+                }
+                return true;
             }
         });
 

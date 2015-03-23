@@ -34,12 +34,16 @@
             android:layout_height="wrap_content"
             android:textAppearance="?android:attr/textAppearanceLarge"
             android:text="@string/home_welcome"
+            android:textColor="@color/vk_smoke_white"
+            android:textSize="@dimen/abc_text_size_display_1_material"
             android:id="@+id/textView" android:layout_gravity="center_horizontal"/>
     <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:textAppearance="?android:attr/textAppearanceMedium"
             android:text="@string/home_motivate"
+            android:textColor="@color/vk_smoke_white"
+            android:textSize="@dimen/abc_text_size_body_1_material"
             android:id="@+id/textView2" android:layout_gravity="center_horizontal"/>
     <LinearLayout
             android:orientation="horizontal"
@@ -48,6 +52,7 @@
         <EditText
                 android:layout_width="fill_parent"
                 android:layout_height="wrap_content"
+                android:textColor="@color/vk_smoke_white"
                 android:id="@+id/artist" android:layout_gravity="center_horizontal"
                 android:layout_weight="0.9"/>
         <ImageButton

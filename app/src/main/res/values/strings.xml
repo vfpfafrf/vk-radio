@@ -30,4 +30,5 @@
     <string name="pref_yt">Year to</string>
     <string name="delete_pref_btn">Delete</string>
     <string name="hint_vk">vk.com</string>
+    <string name="fav_title">Favorites</string>
 </resources>
