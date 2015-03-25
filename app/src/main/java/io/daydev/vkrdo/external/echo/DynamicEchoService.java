@@ -54,8 +54,15 @@ public class DynamicEchoService extends AbstractEchoService {
 
 
     @Override
-    protected RadioInfo initPlayList(RadioInfo radioInfo, PlaylistParams params) throws EchoNestException {
-        session = echoNest.createDynamicPlaylist(params);
+    protected RadioInfo initPlayList(RadioInfo radioInfo, PlaylistParamsWrapper params) throws EchoNestException {
+        PlaylistParams playlistParams =  params.getPlaylistParams();
+        Collection<String> artists = params.getArtists();
+        if (artists != null && !artists.isEmpty()){
+            for(String artist : artists){
+                playlistParams.addArtist(artist);
+            }
+        }
+        session = echoNest.createDynamicPlaylist(playlistParams);
         title = radioInfo.getTitle();
         return radioInfo;
     }

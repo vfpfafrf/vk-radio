@@ -6,10 +6,7 @@ import com.echonest.api.v4.EchoNestException;
 import com.echonest.api.v4.Playlist;
 import com.echonest.api.v4.PlaylistParams;
 import com.echonest.api.v4.Song;
-import com.vk.sdk.api.VKApiConst;
-import com.vk.sdk.api.VKParameters;
-import com.vk.sdk.api.VKRequest;
-import com.vk.sdk.api.VKResponse;
+import com.vk.sdk.api.*;
 import io.daydev.vkrdo.bean.RadioInfo;
 import io.daydev.vkrdo.bean.SongInfo;
 import io.daydev.vkrdo.util.Callback;
@@ -29,15 +26,22 @@ public class StaticEchoService extends AbstractEchoService {
     private PlaylistParams playlistParams;
     private volatile boolean generating = false;
     private int offset = 0;
+    private int artistsOffset = 0;
     private boolean useVk = false;
-
+    private List<String> artists;
 
     private Queue<SongInfo> songQueue = new ConcurrentLinkedQueue<>();
 
     @Override
-    protected RadioInfo initPlayList(RadioInfo radioInfo, PlaylistParams params) throws EchoNestException {
-        this.playlistParams = params;
-        this.playlistParams.setResults(30);
+    protected RadioInfo initPlayList(RadioInfo radioInfo, PlaylistParamsWrapper params) throws EchoNestException {
+
+        playlistParams =  params.getPlaylistParams();
+        artists = params.getArtists();
+        if (artists != null && !artists.isEmpty()) {
+            Collections.shuffle(artists);
+            artistsOffset = 0;
+        }
+
         offset = 0;
         useVk = false;
 
@@ -59,7 +63,34 @@ public class StaticEchoService extends AbstractEchoService {
                             try {
                                 if (params[0] != null) {
                                     generating = true;
-                                    Playlist playlist = echoNest.createStaticPlaylist(params[0]);
+
+                                    PlaylistParams pl = new PlaylistParams();
+                                    pl.getMap().putAll(params[0].getMap());
+
+                                    int maxResult = 30;
+                                    int fallbackResult = 10;
+                                    if (artists != null && !artists.isEmpty()){
+                                        if (artists.size() < 5) { // ONLY 5 artists allowed for API call
+                                            for (String artist : artists) {
+                                                pl.addArtist(artist);
+                                            }
+                                        } else {
+                                            maxResult = 7;
+                                            fallbackResult = 5;
+                                            for (int i=artistsOffset;i<artistsOffset+5;i++) {
+                                                if (i < artists.size()) {
+                                                    pl.addArtist(artists.get(i));
+                                                }
+                                            }
+                                            artistsOffset += 5;
+                                            if (artistsOffset >= artists.size()){
+                                                artistsOffset -= artists.size();
+                                            }
+                                        }
+                                    }
+                                    pl.setResults(maxResult);
+
+                                    Playlist playlist = echoNest.createStaticPlaylist(pl);
                                     for (Song song : playlist.getSongs()) {
                                         if (radioTitle != null && radioTitle.equals(title)) {
                                             Log.i(TAG, "add " + song.getArtistName() + " " + song.getTitle());
@@ -72,7 +103,7 @@ public class StaticEchoService extends AbstractEchoService {
                                             break;
                                         }
                                     }
-                                    if (radioTitle != null && radioTitle.equals(title) && songQueue.size() < 10) {
+                                    if (radioTitle != null && radioTitle.equals(title) && songQueue.size() < fallbackResult) {
                                         useVk = true;
                                     }
                                 }
@@ -85,6 +116,41 @@ public class StaticEchoService extends AbstractEchoService {
                             return null;
                         }
 
+                        @Override
+                        protected void onPostExecute(String s) {
+                            if (artists != null && !artists.isEmpty()) {
+                                if (artists.size() > 5) { // ONLY 5 artists allowed for API call
+                                    List<VKRequest> vkRequests = new ArrayList<>();
+                                    for (int i=artistsOffset;i<artistsOffset+4;i++) {
+                                        if (i < artists.size()) {
+                                            vkRequests.add(vkGetAudioRequest(artists.get(i), 10)); // 10 to fix stupid vk.com search
+                                        }
+                                    }
+                                    artistsOffset += 5;
+                                    if (artistsOffset >= artists.size()){
+                                        artistsOffset -= artists.size();
+                                    }
+                                    VKBatchRequest batch = new VKBatchRequest(vkRequests.toArray(new VKRequest[vkRequests.size()]));
+                                    batch.executeWithListener(new VKBatchRequest.VKBatchRequestListener() {
+                                        @Override
+                                        public void onComplete(VKResponse[] responses) {
+                                            super.onComplete(responses);
+                                            if (responses != null && responses.length > 0) {
+                                                for (VKResponse response : responses) {
+                                                    try {
+                                                        String artist = response.request.getMethodParameters().get(VKApiConst.Q).toString();
+                                                        processVkResponse(response, artist, 1);
+                                                    } catch (Exception e) {
+                                                        Log.e(TAG, "", e);
+                                                    }
+                                                }
+                                                // TODO: may be shuffle queu ??
+                                            }
+                                        }
+                                    });
+                                }
+                            }
+                        }
                     };
                     task.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, playlistParams);
                 } else {
@@ -117,65 +183,81 @@ public class StaticEchoService extends AbstractEchoService {
             Log.i(TAG, "start vk playlist gen with " + artist + " offset " + offset);
             if (artist != null) {
                 generating = true;
-                VKRequest get = new VKRequest("audio.search", VKParameters.from(VKApiConst.Q, artist,
-                                                                                VKApiConst.COUNT, 50,
-                                                                                VKApiConst.SORT, 2,
-                                                                                VKApiConst.OFFSET, offset,
-                                                                                "performer_only", 1));
-                get.executeWithListener(new VKRequest.VKRequestListener() {
-                    @Override
-                    public void onComplete(VKResponse response) {
-                        super.onComplete(response);
-                        try {
-                            JSONObject jsonObject = response.json;
-                            int count = jsonObject.getJSONObject("response").getInt("count");
-                            if (count > 0) {
-                                List<SongInfo> playList = new ArrayList<>();
-                                JSONArray jArray = jsonObject.getJSONObject("response").getJSONArray("items");
-                                String radioTitleLower = radioTitle.toLowerCase();
-                                for (int i = 0; i < jArray.length(); i++) {
-                                    JSONObject jObject = jArray.getJSONObject(i);
-
-                                    String artist = jObject.getString("artist");
-                                    String title = jObject.getString("title");
-                                    String url = jObject.getString("url");
-
-                                    if (artist != null && title != null && url != null) {
-                                        title = title.trim();
-                                        artist = artist.trim();
-
-                                        if (artist.toLowerCase().contains(radioTitleLower)) {
-                                            String check = title.replaceAll(" ", "").toLowerCase();
-                                            if (!check.contains("(remix)") && !check.contains("(mix)")) {
-                                                SongInfo songInfo = new SongInfo(artist, title, url, null);
-
-                                                if (!playList.contains(songInfo)) {
-                                                    playList.add(songInfo);
-                                                }
-                                            }
-                                        }
-                                    }
-                                    offset++;
-                                }
-
-                                if (!playList.isEmpty()) {
-                                    Collections.shuffle(playList, new Random(System.currentTimeMillis()));
-                                    for (SongInfo songInfo : playList) {
-                                        Log.i(TAG, "add vk " + songInfo);
-                                        songQueue.add(songInfo);
-                                    }
-                                }
-                            } else {
-                                offset = 0;
-                            }
-                        } catch (Exception e) {
-                            Log.e("SongSuplier", "while getting song", e);
-                        } finally {
-                            generating = false;
-                        }
-                    }
-                });
+                vkRequest(artist);
             }
         }
+    }
+
+    private VKRequest vkGetAudioRequest(String artist, int count){
+        return new VKRequest("audio.search", VKParameters.from(VKApiConst.Q, artist,
+                VKApiConst.COUNT, count,
+                VKApiConst.SORT, 2,
+                VKApiConst.OFFSET, offset,
+                "performer_only", 1));
+    }
+
+    private void processVkResponse(VKResponse response, String radioArtists, int resultCount) throws Exception{
+            JSONObject jsonObject = response.json;
+            int count = jsonObject.getJSONObject("response").getInt("count");
+            if (count > 0) {
+                List<SongInfo> playList = new ArrayList<>();
+                JSONArray jArray = jsonObject.getJSONObject("response").getJSONArray("items");
+                String radioTitleLower = radioArtists.toLowerCase();
+                for (int i = 0; i < jArray.length(); i++) {
+                    JSONObject jObject = jArray.getJSONObject(i);
+
+                    String artist = jObject.getString("artist");
+                    String title = jObject.getString("title");
+                    String url = jObject.getString("url");
+
+                    if (artist != null && title != null && url != null) {
+                        title = title.trim();
+                        artist = artist.trim();
+
+                        if (artist.toLowerCase().contains(radioTitleLower)) {
+                            String check = title.replaceAll(" ", "").toLowerCase();
+                            if (!check.contains("(remix)") && !check.contains("(mix)")) {
+                                SongInfo songInfo = new SongInfo(artist, title, url, null);
+
+                                if (!playList.contains(songInfo)) {
+                                    playList.add(songInfo);
+
+                                    if (resultCount == -1  || playList.size() == resultCount){
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    offset++;
+                }
+
+                if (!playList.isEmpty()) {
+                    Collections.shuffle(playList, new Random(System.currentTimeMillis()));
+                    for (SongInfo songInfo : playList) {
+                        Log.i(TAG, "add vk " + songInfo);
+                        songQueue.add(songInfo);
+                    }
+                }
+            } else {
+                offset = 0;
+            }
+
+    }
+
+    private void vkRequest(final String artist){
+        vkGetAudioRequest(artist, 50).executeWithListener(new VKRequest.VKRequestListener() {
+            @Override
+            public void onComplete(VKResponse response) {
+                super.onComplete(response);
+                try {
+                    processVkResponse(response, artist, -1);
+                } catch (Exception e) {
+                    Log.e("SongSuplier", "while getting song", e);
+                } finally {
+                    generating = false;
+                }
+            }
+        });
     }
 }

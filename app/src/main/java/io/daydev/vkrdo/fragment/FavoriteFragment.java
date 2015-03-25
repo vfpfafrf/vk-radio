@@ -19,7 +19,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Created by dmitry on 07.03.15.
+ * Favorite-list screen
  */
 public class FavoriteFragment extends Fragment {
 

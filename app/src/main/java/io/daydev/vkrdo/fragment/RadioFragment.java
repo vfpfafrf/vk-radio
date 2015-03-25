@@ -22,7 +22,6 @@ import io.daydev.vkrdo.util.Callback;
 import io.daydev.vkrdo.util.CallbackChecker;
 
 import java.io.Serializable;
-import java.util.Collection;
 
 /**
  * Radio player fragment
@@ -193,7 +192,7 @@ public class RadioFragment extends Fragment implements Callback<Message>, Callba
                     seekBar.setProgress(0);
                     break;
                 case MediaPlayerService.MSG_TRACK_LIST_CHANGES:
-                    Collection<SongInfo> data = (Collection) msg.obj;
+                    //Collection<SongInfo> data = (Collection) msg.obj;
                     /*if (data != null && !data.isEmpty() && data.size() > 1) {
                         playlistItems.clear();
                         for(SongInfo songInfo : data){

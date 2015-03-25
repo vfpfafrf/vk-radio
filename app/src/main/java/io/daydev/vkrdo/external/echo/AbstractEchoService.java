@@ -10,6 +10,9 @@ import io.daydev.vkrdo.external.ConfigurationHolder;
 import io.daydev.vkrdo.external.PlaylistSuplier;
 import io.daydev.vkrdo.util.Callback;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * Created by dmitry on 06.03.15.
  */
@@ -30,9 +33,9 @@ public abstract class AbstractEchoService implements PlaylistSuplier {
         }
 
         try {
-            AsyncTask<PlaylistParams, String, RadioInfo> task = new AsyncTask<PlaylistParams, String, RadioInfo>() {
+            AsyncTask<PlaylistParamsWrapper, String, RadioInfo> task = new AsyncTask<PlaylistParamsWrapper, String, RadioInfo>() {
                 @Override
-                protected RadioInfo doInBackground(PlaylistParams... args) {
+                protected RadioInfo doInBackground(PlaylistParamsWrapper... args) {
                     try {
                         return initPlayList (radioInfo, args[0]);
                     } catch (Exception e) {
@@ -52,10 +55,11 @@ public abstract class AbstractEchoService implements PlaylistSuplier {
         }
     }
 
-    protected abstract RadioInfo initPlayList(RadioInfo radioInfo, PlaylistParams params) throws EchoNestException;
+    protected abstract RadioInfo initPlayList(RadioInfo radioInfo, PlaylistParamsWrapper params) throws EchoNestException;
 
-    protected PlaylistParams generateParams(RadioInfo radioInfo) {
+    protected PlaylistParamsWrapper generateParams(RadioInfo radioInfo) {
         PlaylistParams params = new PlaylistParams();
+        List<String> extraArtists = new ArrayList<>();
 
         params.includeAudioSummary();
         if (radioInfo.isEmpty()) {
@@ -67,8 +71,8 @@ public abstract class AbstractEchoService implements PlaylistSuplier {
 
                 if (artist.contains(",") ){
                     String[] artists = artist.split(",");
-                    for(String artistTmp : artists){
-                        params.addArtist(artistTmp.trim());
+                    for (String artistTmp : artists) {
+                        extraArtists.add(artistTmp.trim());
                     }
                 } else {
                     params.addArtist(artist);
@@ -98,7 +102,7 @@ public abstract class AbstractEchoService implements PlaylistSuplier {
                 params.setArtistEndYearBefore(radioInfo.getYearTo());
             }
         }
-        return params;
+        return new PlaylistParamsWrapper(params, extraArtists);
     }
 
 

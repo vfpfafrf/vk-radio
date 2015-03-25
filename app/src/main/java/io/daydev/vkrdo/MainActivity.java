@@ -288,11 +288,11 @@ public class MainActivity extends VKActivity implements MediaEvent {
                     if (currentText != null){
                         String artist = currentText.getText().toString();
                         if (!artist.equals(getString(R.string.default_title))) {
-                            if (slidePreferencesHelper.addToFav(artist)) {
+                            if (slidePreferencesHelper.addToFavorite(artist)) {
                                 item.setIcon(android.R.drawable.star_on);
                             } else {
                                 item.setIcon(android.R.drawable.star_off);
-                                slidePreferencesHelper.removeFromFav(artist);
+                                slidePreferencesHelper.removeFromFavorite(artist);
                             }
                             PreferenceHelper.saveCollection(getSharedPreferences(PREF_NAME, MODE_PRIVATE), PREF_FAV, slidePreferencesHelper.getFavoritesArtists());
                         }

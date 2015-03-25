@@ -31,7 +31,7 @@ public class SplashFragment extends Fragment {
                 intent.putExtra(MediaEvent.SIMPLE_RADIO, MediaEvent.MAGIC_HOME);
                 LocalBroadcastManager.getInstance(SplashFragment.this.getActivity()).sendBroadcast(intent);
             }
-        }, 1000);
+        }, 500);
 
         return root;
     }

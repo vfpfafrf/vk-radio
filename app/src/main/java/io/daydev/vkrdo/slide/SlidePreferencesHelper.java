@@ -148,7 +148,8 @@ public class SlidePreferencesHelper {
     }
 
 
-    public boolean addToFav(String atrist){
+    public boolean addToFavorite(String atrist){
+        atrist = atrist.trim();
         if (!favoritesArtists.contains(atrist)) {
             favoritesArtists.add(atrist);
             return true;
@@ -157,11 +158,13 @@ public class SlidePreferencesHelper {
     }
 
     public boolean isFavorite(String artist){
-        return favoritesArtists.contains(artist);
+        return artist != null && favoritesArtists.contains(artist.trim());
     }
 
-    public void removeFromFav (String artist){
-        favoritesArtists.remove(artist);
+    public void removeFromFavorite(String artist){
+        if (artist != null){
+            favoritesArtists.remove(artist.trim());
+        }
     }
 
     public ArrayList<String> getFavoritesArtists() {
