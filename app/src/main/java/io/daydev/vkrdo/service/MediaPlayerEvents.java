@@ -13,4 +13,5 @@ public interface MediaPlayerEvents {
     public static final String ACTION_STOP = "action_stop";
     public static final String ACTION_SEEK = "action_seek";
     public static final String ACTION_STATUS = "action_status";
+    public static final String ACTION_ADD_VIRTUAL = "action_+virtual";
 }

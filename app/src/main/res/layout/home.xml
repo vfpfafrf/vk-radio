@@ -2,8 +2,7 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
               android:orientation="vertical"
               android:layout_width="match_parent"
-              android:layout_height="match_parent"
-            android:background="@color/vk_black">
+              android:layout_height="match_parent">
 
     <FrameLayout
             android:layout_width="fill_parent"
@@ -12,14 +11,14 @@
             android:gravity="center"
             android:layout_weight="0.8"
             >
-    <ImageView
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:id="@+id/imageView6" android:layout_gravity="top" android:src="@drawable/home"
-            android:scaleType="centerCrop"/>
-    <View android:layout_width="fill_parent"
-          android:layout_height="fill_parent"
-          android:background="@drawable/gradient_shape"/>
+        <ImageView
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:id="@+id/imageView6" android:layout_gravity="top" android:src="@drawable/home"
+                android:scaleType="centerCrop"/>
+        <View android:layout_width="fill_parent"
+              android:layout_height="fill_parent"
+              android:background="@drawable/gradient_shape"/>
     </FrameLayout>
 
     <LinearLayout android:id="@+id/mainInfo"
@@ -27,65 +26,67 @@
                   android:layout_width="match_parent"
                   android:layout_height="match_parent"
                   android:layout_weight="0.5"
+                  android:background="#ff000000"
             >
 
-    <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:textAppearance="?android:attr/textAppearanceLarge"
-            android:text="@string/home_welcome"
-            android:textColor="@color/vk_smoke_white"
-            android:textSize="@dimen/abc_text_size_display_1_material"
-            android:id="@+id/textView" android:layout_gravity="center_horizontal"/>
-    <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:textAppearance="?android:attr/textAppearanceMedium"
-            android:text="@string/home_motivate"
-            android:textColor="@color/vk_smoke_white"
-            android:textSize="@dimen/abc_text_size_body_1_material"
-            android:id="@+id/textView2" android:layout_gravity="center_horizontal"/>
-    <LinearLayout
-            android:orientation="horizontal"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content" android:weightSum="1">
-        <EditText
-                android:layout_width="fill_parent"
+        <TextView
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:textAppearance="?android:attr/textAppearanceLarge"
+                android:text="@string/home_welcome"
                 android:textColor="@color/vk_smoke_white"
-                android:id="@+id/artist" android:layout_gravity="center_horizontal"
-                android:layout_weight="0.9"/>
-        <ImageButton
-                android:background="@color/vk_black"
+                android:textSize="@dimen/abc_text_size_display_1_material"
+                android:id="@+id/textView" android:layout_gravity="center_horizontal"/>
+        <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:id="@+id/start" android:layout_gravity="center_horizontal"
-                android:src="@android:drawable/ic_media_play"
-                android:layout_weight="0.1"/>
-    </LinearLayout>
+                android:textAppearance="?android:attr/textAppearanceMedium"
+                android:text="@string/home_motivate"
+                android:textColor="@color/vk_smoke_white"
+                android:textSize="@dimen/abc_text_size_body_1_material"
+                android:id="@+id/textView2" android:layout_gravity="center_horizontal"/>
+        <LinearLayout
+                android:orientation="horizontal"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content" android:weightSum="1">
+            <EditText
+                    android:layout_width="fill_parent"
+                    android:layout_height="wrap_content"
+                    android:textColor="@color/vk_smoke_white"
+                    android:id="@+id/artist" android:layout_gravity="center_horizontal"
+                    android:layout_weight="0.9"/>
+            <ImageButton
+                    android:background="@color/vk_black"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:id="@+id/start" android:layout_gravity="center_horizontal"
+                    android:src="@android:drawable/ic_media_play"
+                    android:layout_weight="0.1"/>
+        </LinearLayout>
 
-    <LinearLayout
-            android:orientation="horizontal"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content" android:layout_gravity="center_horizontal"
-            android:weightSum="1">
-        <ImageView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:id="@+id/imageView3" android:src="@drawable/vk"
-                android:layout_weight="0.3" android:layout_margin="10dp" android:contentDescription="@string/hint_vk"/>
-        <ImageView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:id="@+id/imageView4" android:src="@drawable/last"
-                android:layout_weight="0.2"
-                android:layout_margin="10dp"/>
-        <ImageView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:id="@+id/imageView5" android:src="@drawable/echonest"
-                android:layout_weight="0.2" android:layout_margin="10dp"/>
+        <LinearLayout
+                android:orientation="horizontal"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content" android:layout_gravity="center_horizontal"
+                android:weightSum="1">
+            <ImageView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:id="@+id/imageView3" android:src="@drawable/vk"
+                    android:layout_weight="0.3" android:layout_margin="10dp"
+                    android:contentDescription="@string/hint_vk"/>
+            <ImageView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:id="@+id/imageView4" android:src="@drawable/last"
+                    android:layout_weight="0.2"
+                    android:layout_margin="10dp"/>
+            <ImageView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:id="@+id/imageView5" android:src="@drawable/echonest"
+                    android:layout_weight="0.2" android:layout_margin="10dp"/>
+        </LinearLayout>
     </LinearLayout>
-</LinearLayout>
 
 </LinearLayout>

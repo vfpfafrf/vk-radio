@@ -27,6 +27,7 @@ public interface MediaEvent {
     public static final String DATA_SERIALIZEBLE = "data";
     public static final String DATA_PARCEABLE = "data-parcelabe";
     public static final String DATA_RADIO = "radio-extra";
+    public static final String DATA_VIRTUAL_RADIOS = "virtual-radio-extra";
 
     /**
      * default home radio artist - if nothings is selected, but play button pushed

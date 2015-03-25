@@ -36,6 +36,8 @@ import java.util.List;
  */
 public class MediaPlayerService extends AbstractLocalBinderService implements MediaPlayerEvents, Callback<SongInfo>, CallbackChecker<SongInfo>, ServiceConnection {
 
+    private static final String TAG = "MediaPlayerService";
+
     public static final String EXTRA_RADIO = "vk.radio";
     public static final String EXTRA_SEEK = "extra.seek";
 
@@ -43,6 +45,7 @@ public class MediaPlayerService extends AbstractLocalBinderService implements Me
     private MediaSession mediaSession;
     private MediaController mediaController;
     private MediaNotification mediaNotification;
+    private int currentDuration;
 
     private PlayListService playListService;
 
@@ -58,6 +61,10 @@ public class MediaPlayerService extends AbstractLocalBinderService implements Me
     public static final int MSG_ART = 11;
     public static final int MSG_FAV = 12;
     public static final int MSG_NOT_FAV = 13;
+    public static final int MSG_FAV_LIST = 14;
+
+    // currently played "virtual" station - they should be cleaned at app restart, but saved when activity restarted
+    private List<String> virtualRadios;
 
     /**
      * calls callback when song added
@@ -109,14 +116,17 @@ public class MediaPlayerService extends AbstractLocalBinderService implements Me
                         controls.seekTo(seek);
                     }
                 } catch (Exception e) {
-                    Log.e("MediaPLayerService", "while seekTo", e);
+                    Log.e(TAG, "while seekTo", e);
                 }
                 break;
             case ACTION_STATUS:
+                if (virtualRadios != null) {
+                    sendMessage(MSG_FAV_LIST, virtualRadios);
+                }
                 if (playListService.isPlayListStated()) {
                     sendMessage(MSG_TRACK_LIST_CHANGES, playListService.getToPlaySimpleFormat());
                     if (mediaPlayer != null && mediaPlayer.isPlaying()) {
-                        sendMessage(MSG_SET_DURATION, mediaPlayer.getDuration());
+                        sendMessage(MSG_SET_DURATION, currentDuration);
                     }
                     SongInfo song = playListService.getCurrent();
                     if (song != null) {
@@ -129,7 +139,13 @@ public class MediaPlayerService extends AbstractLocalBinderService implements Me
                         sendMessage(MSG_ART, mediaNotification.getCurrentBitmap());
                     }
                 }
-
+                break;
+            case ACTION_ADD_VIRTUAL:
+                String virtualRadio = intent.getStringExtra(EXTRA_RADIO);
+                if (virtualRadios != null && virtualRadio != null && !virtualRadio.trim().isEmpty() && !virtualRadios.contains(virtualRadio)) {
+                    virtualRadios.add(virtualRadio);
+                }
+                break;
         }
     }
 
@@ -144,6 +160,7 @@ public class MediaPlayerService extends AbstractLocalBinderService implements Me
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         if (mediaSession == null) {
+            virtualRadios = new ArrayList<>();
             initMediaSessions();
         }
         handleIntent(intent);
@@ -176,7 +193,7 @@ public class MediaPlayerService extends AbstractLocalBinderService implements Me
         mediaPlayer.setOnErrorListener(new MediaPlayer.OnErrorListener() {
             @Override
             public boolean onError(MediaPlayer mp, int what, int extra) {
-                Log.e("OMFG", "Ahtung ahtung"+what+" "+extra);
+                Log.e(TAG, "Ahtung ahtung "+what+" "+extra);
                 if (what != -38 && extra != 0) { // pause called in wrong state
                     sendError("MediaPlayer error what=" + what + " extra=" + extra);
                     return false; //todo: handle error and return true)
@@ -207,7 +224,7 @@ public class MediaPlayerService extends AbstractLocalBinderService implements Me
                             }
                         }
                     } catch (Exception e) {
-                        Log.e("MediaPlayerService", "progressNotifycation", e);
+                        Log.e(TAG, "progressNotifycation", e);
                     }
                 }
             };
@@ -215,7 +232,6 @@ public class MediaPlayerService extends AbstractLocalBinderService implements Me
             @Override
             public void onPlay() {
                 super.onPlay();
-                Log.e("MediaPlayerService", "onPlay ");
                 if (paused && !startedNewRadio) { //resume from paused and new radio loading
                     try {
                         mediaPlayer.start();
@@ -236,8 +252,7 @@ public class MediaPlayerService extends AbstractLocalBinderService implements Me
             @Override
             public void onPause() {
                 super.onPause();
-                Log.e("MediaPlayerService", "onPause ");
-                if (mediaPlayer != null) {
+                if (mediaPlayer != null && mediaPlayer.isPlaying()) {
                     mediaPlayer.pause();
                 }
                 paused = true;
@@ -251,20 +266,19 @@ public class MediaPlayerService extends AbstractLocalBinderService implements Me
             @Override
             public void onSkipToNext() {
                 super.onSkipToNext();
-                Log.e("MediaPlayerService", "onSkipToNext ");
                 playNext();
             }
 
             @Override
             public void onStop() {
                 super.onStop();
-                Log.e("MediaPlayerService", "onStop ");
                 sendMessage(MSG_STOP, null);
-
-                if (mediaPlayer.isPlaying()) {
-                    mediaPlayer.stop();
+                if (mediaPlayer != null) {
+                    if (mediaPlayer.isPlaying()) {
+                        mediaPlayer.stop();
+                    }
+                    mediaPlayer.reset();
                 }
-                mediaPlayer.reset();
 
                 NotificationManager notificationManager = (NotificationManager) getApplicationContext().getSystemService(Context.NOTIFICATION_SERVICE);
                 notificationManager.cancel(1);
@@ -283,7 +297,6 @@ public class MediaPlayerService extends AbstractLocalBinderService implements Me
             private void playNext() {
                 paused = false;
                 final SongInfo song = playListService.next();
-                Log.i("song", "get next song " + song.getArtist());
                 try {
                     mediaPlayer.reset();
                     handler.removeCallbacks(progressNotification);
@@ -305,10 +318,10 @@ public class MediaPlayerService extends AbstractLocalBinderService implements Me
                     mediaPlayer.setOnPreparedListener(new MediaPlayer.OnPreparedListener() {
                         @Override
                         public void onPrepared(MediaPlayer mp) {
-                            Log.e("MediaPlayerService", "-------------on prepared-----------------------------" + song);
                             mediaPlayer.start();
                             startedNewRadio = false;
-                            sendMessage(MSG_SET_DURATION, mediaPlayer.getDuration());
+                            currentDuration = mediaPlayer.getDuration();
+                            sendMessage(MSG_SET_DURATION, currentDuration);
                             buildNotification(mediaNotification.actionPause(getApplicationContext()), song);
                         }
                     });
@@ -318,9 +331,9 @@ public class MediaPlayerService extends AbstractLocalBinderService implements Me
                     try {
                         mediaPlayer.pause();
                     } catch (Exception ignore) {
-                        Log.e("MediaPlayerService", "while paause", ignore);
+                        Log.e(TAG, "while paause", ignore);
                     }
-                    Log.e("MediaPlayerService", "while next", e);
+                    Log.e(TAG, "while next", e);
                 }
 
             }
@@ -331,12 +344,9 @@ public class MediaPlayerService extends AbstractLocalBinderService implements Me
     @Override
     public void onDestroy() {
         super.onDestroy();
-        if (mediaPlayer != null) {
-            if (mediaPlayer.isPlaying()) {
-                mediaPlayer.stop();
-            }
-            mediaPlayer.reset();
-            mediaPlayer.release();
+        if (mediaController != null) {
+            MediaController.TransportControls controls = mediaController.getTransportControls();
+            controls.stop();
         }
     }
 
@@ -364,7 +374,7 @@ public class MediaPlayerService extends AbstractLocalBinderService implements Me
     protected void sendMessage(int msg, Object data) {
         Intent intent = new Intent(MediaEvent.EVENT);
         intent.putExtra(MediaEvent.TYPE, MediaEvent.MEDIAPLAYER_COMMAND);
-
+        intent.putExtra(MediaEvent.DATA_VIRTUAL_RADIOS, (Serializable)virtualRadios);
         intent.putExtra(MediaEvent.DATA_RADIO, playListService.getCurrentRadio());
         intent.putExtra(MediaEvent.DATA_MESSAGE_CODE, msg);
         if (data instanceof Serializable) {

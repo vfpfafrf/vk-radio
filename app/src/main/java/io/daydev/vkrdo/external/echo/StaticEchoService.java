@@ -117,7 +117,11 @@ public class StaticEchoService extends AbstractEchoService {
             Log.i(TAG, "start vk playlist gen with " + artist + " offset " + offset);
             if (artist != null) {
                 generating = true;
-                VKRequest get = new VKRequest("audio.search", VKParameters.from(VKApiConst.Q, artist, VKApiConst.COUNT, 50, VKApiConst.SORT, 2, VKApiConst.OFFSET, offset));
+                VKRequest get = new VKRequest("audio.search", VKParameters.from(VKApiConst.Q, artist,
+                                                                                VKApiConst.COUNT, 50,
+                                                                                VKApiConst.SORT, 2,
+                                                                                VKApiConst.OFFSET, offset,
+                                                                                "performer_only", 1));
                 get.executeWithListener(new VKRequest.VKRequestListener() {
                     @Override
                     public void onComplete(VKResponse response) {
@@ -128,6 +132,7 @@ public class StaticEchoService extends AbstractEchoService {
                             if (count > 0) {
                                 List<SongInfo> playList = new ArrayList<>();
                                 JSONArray jArray = jsonObject.getJSONObject("response").getJSONArray("items");
+                                String radioTitleLower = radioTitle.toLowerCase();
                                 for (int i = 0; i < jArray.length(); i++) {
                                     JSONObject jObject = jArray.getJSONObject(i);
 
@@ -139,12 +144,14 @@ public class StaticEchoService extends AbstractEchoService {
                                         title = title.trim();
                                         artist = artist.trim();
 
-                                        String check = title.replaceAll(" ", "");
-                                        if (!check.toLowerCase().contains("(remix)") && !check.toLowerCase().contains("(mix)")) {
-                                            SongInfo songInfo = new SongInfo(artist, title, url, null);
+                                        if (artist.toLowerCase().contains(radioTitleLower)) {
+                                            String check = title.replaceAll(" ", "").toLowerCase();
+                                            if (!check.contains("(remix)") && !check.contains("(mix)")) {
+                                                SongInfo songInfo = new SongInfo(artist, title, url, null);
 
-                                            if (!playList.contains(songInfo)) {
-                                                playList.add(songInfo);
+                                                if (!playList.contains(songInfo)) {
+                                                    playList.add(songInfo);
+                                                }
                                             }
                                         }
                                     }

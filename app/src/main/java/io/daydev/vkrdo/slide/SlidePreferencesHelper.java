@@ -136,8 +136,12 @@ public class SlidePreferencesHelper {
     public boolean addWithoutPreferences(RadioInfo radioInfo, NavDrawerListAdapter slideAdapter){
         radios.put(radioInfo.getTitle(), radioInfo);
         if (!navMenuTitles.contains(radioInfo.getTitle())){
-            navMenuTitles.add(radioInfo.getTitle());
-            slideAdapter.add(NavDrawerItem.generateVirtual(radioInfo));
+            synchronized (this) {
+                if (!navMenuTitles.contains(radioInfo.getTitle())) {
+                    navMenuTitles.add(radioInfo.getTitle());
+                    slideAdapter.add(NavDrawerItem.generateVirtual(radioInfo));
+                }
+            }
             return true;
         }
         return false;

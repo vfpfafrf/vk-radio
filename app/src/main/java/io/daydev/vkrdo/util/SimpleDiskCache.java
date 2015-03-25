@@ -133,7 +133,7 @@ public class SimpleDiskCache {
     }
 
     private String clearKey(String key) {
-        return key == null  || key.isEmpty() ? key : key.replaceAll(" ", "_");
+        return key == null  || key.isEmpty() ? key : key.replaceAll("[ \n\r]", "_");
     }
 
     public void clearCache() {

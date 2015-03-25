@@ -207,7 +207,6 @@ public class MainActivity extends VKActivity implements MediaEvent {
 
         IntentFilter receiverFilter = new IntentFilter(Intent.ACTION_HEADSET_PLUG);
         registerReceiver(headset, receiverFilter);
-
     }
 
     private final BroadcastReceiver headset = new BroadcastReceiver() {
@@ -288,14 +287,15 @@ public class MainActivity extends VKActivity implements MediaEvent {
                     TextView currentText = (TextView) findViewById(R.id.currentSong);
                     if (currentText != null){
                         String artist = currentText.getText().toString();
-                        Log.e("fav", artist);
-                        if (slidePreferencesHelper.addToFav(artist)){
-                            item.setIcon(android.R.drawable.star_on);
-                        } else {
-                            item.setIcon(android.R.drawable.star_off);
-                            slidePreferencesHelper.removeFromFav(artist);
+                        if (!artist.equals(getString(R.string.default_title))) {
+                            if (slidePreferencesHelper.addToFav(artist)) {
+                                item.setIcon(android.R.drawable.star_on);
+                            } else {
+                                item.setIcon(android.R.drawable.star_off);
+                                slidePreferencesHelper.removeFromFav(artist);
+                            }
+                            PreferenceHelper.saveCollection(getSharedPreferences(PREF_NAME, MODE_PRIVATE), PREF_FAV, slidePreferencesHelper.getFavoritesArtists());
                         }
-                        PreferenceHelper.saveCollection(getSharedPreferences(PREF_NAME, MODE_PRIVATE), PREF_FAV, slidePreferencesHelper.getFavoritesArtists());
                     }
                 }
                 return true;
@@ -431,7 +431,7 @@ public class MainActivity extends VKActivity implements MediaEvent {
                 RadioInfo oldRadio = obj.getFirst();
                 RadioInfo newRadio = obj.getSecond();
 
-                if (!slidePreferencesHelper.addOrReplace(oldRadio, newRadio, slideAdapter)){
+                if (!slidePreferencesHelper.addOrReplace(oldRadio, newRadio, slideAdapter)) {
                     return;
                 }
                 PreferenceHelper.saveMap(getSharedPreferences(PREF_NAME, MODE_PRIVATE), PREF_RADIO, slidePreferencesHelper.getPreferencesMap());
@@ -479,6 +479,29 @@ public class MainActivity extends VKActivity implements MediaEvent {
         LocalBroadcastManager.getInstance(this).unregisterReceiver(mMessageReceiver);
     }
 
+    private int addVirtualRadio(String title) {
+        //setup "virtual" radio - do not save it!
+        RadioInfo radioInfo = RadioBuilder.getInstance()
+                .setTitle(title)
+                .setArtist(title)
+                .setArtistLinkType(RadioInfo.ArtistLinkType.LIMIT)
+                .build();
+        return addVirtualRadio(radioInfo);
+    }
+
+    private int addVirtualRadio(RadioInfo radioInfo){
+        if (slidePreferencesHelper.addWithoutPreferences(radioInfo, slideAdapter)) {
+            Intent intent = new Intent(this, MediaPlayerService.class);
+            intent.setAction(MediaPlayerService.ACTION_ADD_VIRTUAL);
+            intent.putExtra(MediaPlayerService.EXTRA_RADIO, radioInfo.getTitle());
+            startService(intent);
+
+            return slidePreferencesHelper.position(radioInfo) + POSITION_ACCURATE;
+        } else {
+            return slidePreferencesHelper.getNavMenuSize();
+        }
+    }
+
     private BroadcastReceiver mMessageReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
@@ -524,35 +547,19 @@ public class MainActivity extends VKActivity implements MediaEvent {
                         } else {
                             RadioInfo radioInfo = (RadioInfo) intent.getSerializableExtra(REAL_RADIO);
                             if (radioInfo == null) {
-                                //setup "virtual" radio - do not save it!
-                                radioInfo = RadioBuilder.getInstance()
-                                        .setTitle(radio)
-                                        .setArtist(radio)
-                                        .setArtistLinkType(RadioInfo.ArtistLinkType.LIMIT)
-                                        .build();
-
-                                if (slidePreferencesHelper.addWithoutPreferences(radioInfo, slideAdapter)) {
-                                    position = slidePreferencesHelper.position(radioInfo) + POSITION_ACCURATE;
-                                } else {
-                                    position = slidePreferencesHelper.getNavMenuSize();
-                                }
+                                position = addVirtualRadio (radio);
                             } else {
                                 if (!radioInfo.getTitle().equals(FavoriteFragment.RADIO_TITLE)) {
                                     // display current radio & play it
                                     position =  slidePreferencesHelper.position(radioInfo);
                                     if (position == -1) {
-                                        slidePreferencesHelper.addWithoutPreferences(radioInfo, slideAdapter);
-                                        position = slidePreferencesHelper.position(radioInfo) + POSITION_ACCURATE;
+                                        position = addVirtualRadio(radioInfo);
                                     } else {
                                         position += POSITION_ACCURATE;
                                     }
                                 } else {
                                     // display "favorites" radio and play it
-                                    if (slidePreferencesHelper.addWithoutPreferences(radioInfo, slideAdapter)) {
-                                        position = slidePreferencesHelper.position(radioInfo) + POSITION_ACCURATE;
-                                    } else {
-                                        position = slidePreferencesHelper.getNavMenuSize();
-                                    }
+                                    position = addVirtualRadio (radioInfo);
                                 }
                                 extra = RadioFragment.EXTRA_PLAY;
                             }
@@ -579,14 +586,19 @@ public class MainActivity extends VKActivity implements MediaEvent {
                     RadioInfo radioSource = (RadioInfo) intent.getSerializableExtra(MediaEvent.DATA_RADIO);
                     if (radioSource != null) {
 
-                        // if no settings then goto radio fragment
-                        if (currentFragmentRadioChecker == null && !State.SETTINGS.equals(currentState) && !State.FAV.equals(currentState)) {
-                            displayView(slidePreferencesHelper.position(radioSource) + POSITION_ACCURATE);
-                        }
-
                         // setup icon if it pause/stop event
                         int message = intent.getIntExtra(MediaEvent.DATA_MESSAGE_CODE, 1);
                         switch (message) {
+                            case MediaPlayerService.MSG_FAV_LIST:
+                                // setup virtual radios list...
+                                Serializable data = intent.getSerializableExtra(MediaEvent.DATA_VIRTUAL_RADIOS);
+                                if (data != null && data instanceof List) {
+                                    List<String> virtualRadioList =(List<String>)data;
+                                    for(String virtualRadio : virtualRadioList) {
+                                        addVirtualRadio(virtualRadio);
+                                    }
+                                }
+                                break;
                             case MediaPlayerService.MSG_STOP:
                             case MediaPlayerService.MSG_PAUSE:
                                 slideAdapter.setIcon(radioSource, android.R.drawable.ic_media_pause);
@@ -595,6 +607,15 @@ public class MainActivity extends VKActivity implements MediaEvent {
                                 slideAdapter.setIcon(radioSource, android.R.drawable.ic_media_play, android.R.drawable.ic_media_pause);
                                 break;
                         }
+
+                        // if no settings then goto radio fragment
+                        if (currentFragmentRadioChecker == null && !State.SETTINGS.equals(currentState) && !State.FAV.equals(currentState)) {
+                            int pos = slidePreferencesHelper.position(radioSource);
+                            if (pos > -1) {
+                                displayView(pos + POSITION_ACCURATE);
+                            }
+                        }
+
 
                         // next processing by current radio fragment
                         if (currentFragmentRadioChecker != null && currentFragmentCallback != null && currentFragmentRadioChecker.check(radioSource)) {
@@ -664,19 +685,19 @@ public class MainActivity extends VKActivity implements MediaEvent {
         } else {
             if (doubleBackToExitPressedOnce) {
                 super.onBackPressed();
-                return;
+                stopService(new Intent(this, MediaPlayerService.class));
+            } else {
+                this.doubleBackToExitPressedOnce = true;
+                Toast.makeText(this, getString(R.string.back_hint), Toast.LENGTH_SHORT).show();
+
+                new Handler().postDelayed(new Runnable() {
+
+                    @Override
+                    public void run() {
+                        doubleBackToExitPressedOnce = false;
+                    }
+                }, 2000);
             }
-
-            this.doubleBackToExitPressedOnce = true;
-            Toast.makeText(this, getString(R.string.back_hint), Toast.LENGTH_SHORT).show();
-
-            new Handler().postDelayed(new Runnable() {
-
-                @Override
-                public void run() {
-                    doubleBackToExitPressedOnce = false;
-                }
-            }, 2000);
         }
     }
 
