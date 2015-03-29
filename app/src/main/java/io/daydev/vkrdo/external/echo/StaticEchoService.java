@@ -222,7 +222,7 @@ public class StaticEchoService extends AbstractEchoService {
                                 if (!playList.contains(songInfo)) {
                                     playList.add(songInfo);
 
-                                    if (resultCount == -1  || playList.size() == resultCount){
+                                    if (playList.size() == resultCount){
                                         break;
                                     }
                                 }
